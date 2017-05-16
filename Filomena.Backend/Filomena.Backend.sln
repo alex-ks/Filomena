@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Filomena.Backend.Service", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Filomena.Backend.Data", "src\Filomena.Backend.Data\Filomena.Backend.Data.csproj", "{D7B20954-F8FF-476F-AAD8-0A7F40F85433}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Filomena.Backend.Executor", "Filomena.Backend.Executor\Filomena.Backend.Executor.csproj", "{3F1F1FD3-1B3A-47C5-B4AE-F0C3989071F7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,6 +44,18 @@ Global
 		{D7B20954-F8FF-476F-AAD8-0A7F40F85433}.Release|x64.Build.0 = Release|Any CPU
 		{D7B20954-F8FF-476F-AAD8-0A7F40F85433}.Release|x86.ActiveCfg = Release|Any CPU
 		{D7B20954-F8FF-476F-AAD8-0A7F40F85433}.Release|x86.Build.0 = Release|Any CPU
+		{3F1F1FD3-1B3A-47C5-B4AE-F0C3989071F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F1F1FD3-1B3A-47C5-B4AE-F0C3989071F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F1F1FD3-1B3A-47C5-B4AE-F0C3989071F7}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3F1F1FD3-1B3A-47C5-B4AE-F0C3989071F7}.Debug|x64.Build.0 = Debug|Any CPU
+		{3F1F1FD3-1B3A-47C5-B4AE-F0C3989071F7}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3F1F1FD3-1B3A-47C5-B4AE-F0C3989071F7}.Debug|x86.Build.0 = Debug|Any CPU
+		{3F1F1FD3-1B3A-47C5-B4AE-F0C3989071F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F1F1FD3-1B3A-47C5-B4AE-F0C3989071F7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F1F1FD3-1B3A-47C5-B4AE-F0C3989071F7}.Release|x64.ActiveCfg = Release|Any CPU
+		{3F1F1FD3-1B3A-47C5-B4AE-F0C3989071F7}.Release|x64.Build.0 = Release|Any CPU
+		{3F1F1FD3-1B3A-47C5-B4AE-F0C3989071F7}.Release|x86.ActiveCfg = Release|Any CPU
+		{3F1F1FD3-1B3A-47C5-B4AE-F0C3989071F7}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

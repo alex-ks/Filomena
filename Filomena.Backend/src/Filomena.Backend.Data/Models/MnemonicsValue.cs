@@ -1,12 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Runtime.Serialization;
 
 namespace Filomena.Backend.Data.Models
 {
+    [DataContract]
     public class MnemonicsValue
     {
-        public string Name { get; set; }
+        [DataMember(Name = "value")]
+        public string Value { get; set; }
+        [DataMember(Name = "type")]
         public DataType Type { get; set; }
     }
 }

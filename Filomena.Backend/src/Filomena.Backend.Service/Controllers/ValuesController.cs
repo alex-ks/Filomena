@@ -13,7 +13,9 @@ namespace Filomena.Backend.Service.Controllers
         [HttpGet]
         public IEnumerable<string> Get()
         {
-            return new string[] { "value1", "value2" };
+            var rng = new Random();
+            while (true)
+                yield return rng.Next().ToString();
         }
 
         // GET api/values/5
