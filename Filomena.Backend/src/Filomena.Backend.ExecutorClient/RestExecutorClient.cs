@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Filomena.Backend.Data.Models;
+using Filomena.Backend.Models;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -18,6 +18,8 @@ namespace Filomena.Backend.ExecutorClient
         {
             this.host = host;
             this.port = port;
+            // httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "my token");
+            // need username or smth else to get token
         }
         private async Task<int> ExecuteAsync<T>(T bodyObject)
         {
@@ -140,7 +142,7 @@ namespace Filomena.Backend.ExecutorClient
                 Port = port,
                 Path = $"/session/{sessionId}"
             };
-
+            
             using (var responce = await httpClient.DeleteAsync(builder.Uri))
             using (var content = responce.Content)
             {

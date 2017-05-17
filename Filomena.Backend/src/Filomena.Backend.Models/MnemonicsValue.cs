@@ -1,6 +1,6 @@
 ﻿using System.Runtime.Serialization;
 
-namespace Filomena.Backend.Data.Models
+namespace Filomena.Backend.Models
 {
     [DataContract]
     public class MnemonicsValue

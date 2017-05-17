@@ -1,4 +1,4 @@
-﻿using Filomena.Backend.Data.Models;
+﻿using Filomena.Backend.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;

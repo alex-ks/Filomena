@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Filomena.Backend.Data\Filomena.Backend.Data.csproj" />
+    <ProjectReference Include="..\Filomena.Backend.Models\Filomena.Backend.Models.csproj" />
   </ItemGroup>
 
   <ItemGroup>

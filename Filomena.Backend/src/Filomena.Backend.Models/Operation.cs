@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Text;
 
-namespace Filomena.Backend.Data.Models
+namespace Filomena.Backend.Models
 {
     [DataContract]
     public class Operation

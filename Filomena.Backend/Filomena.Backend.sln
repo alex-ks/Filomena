@@ -10,6 +10,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Filomena.Backend.Data", "sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Filomena.Backend.ExecutorClient", "src\Filomena.Backend.ExecutorClient\Filomena.Backend.ExecutorClient.csproj", "{C4398CCF-4C0A-4396-A23C-7520E0C0353D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Filomena.Backend.Models", "src\Filomena.Backend.Models\Filomena.Backend.Models.csproj", "{87160EF5-6334-49BC-A718-83722F2A3D99}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{E9CCA7B9-5436-49BE-9810-DB76A52658F4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -56,6 +60,18 @@ Global
 		{C4398CCF-4C0A-4396-A23C-7520E0C0353D}.Release|x64.Build.0 = Release|Any CPU
 		{C4398CCF-4C0A-4396-A23C-7520E0C0353D}.Release|x86.ActiveCfg = Release|Any CPU
 		{C4398CCF-4C0A-4396-A23C-7520E0C0353D}.Release|x86.Build.0 = Release|Any CPU
+		{87160EF5-6334-49BC-A718-83722F2A3D99}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87160EF5-6334-49BC-A718-83722F2A3D99}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87160EF5-6334-49BC-A718-83722F2A3D99}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{87160EF5-6334-49BC-A718-83722F2A3D99}.Debug|x64.Build.0 = Debug|Any CPU
+		{87160EF5-6334-49BC-A718-83722F2A3D99}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{87160EF5-6334-49BC-A718-83722F2A3D99}.Debug|x86.Build.0 = Debug|Any CPU
+		{87160EF5-6334-49BC-A718-83722F2A3D99}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87160EF5-6334-49BC-A718-83722F2A3D99}.Release|Any CPU.Build.0 = Release|Any CPU
+		{87160EF5-6334-49BC-A718-83722F2A3D99}.Release|x64.ActiveCfg = Release|Any CPU
+		{87160EF5-6334-49BC-A718-83722F2A3D99}.Release|x64.Build.0 = Release|Any CPU
+		{87160EF5-6334-49BC-A718-83722F2A3D99}.Release|x86.ActiveCfg = Release|Any CPU
+		{87160EF5-6334-49BC-A718-83722F2A3D99}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -64,5 +80,6 @@ Global
 		{49822BFB-C4CF-49EF-B905-74117AF43AA7} = {6BA49490-7568-496E-8073-AC6C15C03FDD}
 		{D7B20954-F8FF-476F-AAD8-0A7F40F85433} = {6BA49490-7568-496E-8073-AC6C15C03FDD}
 		{C4398CCF-4C0A-4396-A23C-7520E0C0353D} = {6BA49490-7568-496E-8073-AC6C15C03FDD}
+		{87160EF5-6334-49BC-A718-83722F2A3D99} = {6BA49490-7568-496E-8073-AC6C15C03FDD}
 	EndGlobalSection
 EndGlobal
