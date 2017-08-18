@@ -19,7 +19,7 @@ namespace Filomena.Backend.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseInMemoryDatabase();
+            optionsBuilder.UseInMemoryDatabase("Filomena");
         }
     }
 }
