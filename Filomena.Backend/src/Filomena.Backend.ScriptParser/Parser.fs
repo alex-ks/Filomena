@@ -58,7 +58,7 @@ module Parser =
             let (SynModuleOrNamespace(longIdent, isRecursive, isModule, moduleDecls, xmlDoc, attrs, accessibility, entityRange)) = moduleOrNs
             if isModule then do printf "Module " else do printf "Namespace "
             do printfn "%A" longIdent
-            do visitDeclarations moduleDecls) 
+            do visitDeclarations moduleDecls
 
     let parseScript source =
         let maybeTree = getUntypedTree source in
