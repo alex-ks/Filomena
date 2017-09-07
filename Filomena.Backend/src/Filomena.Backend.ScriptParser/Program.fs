@@ -6,7 +6,7 @@ let source = """
 open IrisDataset
 open Ml.Knn
 
-let rec fact x = if x <= 1 then 1 else x * fact (x - 1)
+let rec fact x : int = if x <= 1 then 1 else x * fact (x - 1)
 
 let dataset = loadIrisDataset ()
 let testSize = Seq.length dataset / 3
