@@ -14,7 +14,9 @@ type ('a, 'b) Maybe = Succeeded of 'a | FailedWith of 'b with
         | FailedWith e -> m
 
 module Parser =
-    let identToString (ident: LongIdentWithDots) = ident.Lid |> List.map (fun x -> x.idText) |> String.concat "."
+    let identToString (ident: LongIdentWithDots) = ident.Lid |> List.map (fun x -> x.idText) |> String.concat "." 
+
+    let nothing = ()
 
     let checker = FSharpChecker.Create(keepAssemblyContents=true)
 
@@ -42,7 +44,32 @@ module Parser =
 
     let visitPattern pattern = printf "pattern"
     
-    let visitExpression expr = printf "expr"
+    let rec visitExpression = function
+    | SynExpr.IfThenElse (cond, trueBranch, falseBranchOpt, seqPointIfToThen, isFromErrorRecovery, ifToThenRange, ifToEndRange) ->
+        do printf "if "
+        do visitExpression cond |> ignore
+        do printf " then "
+        do visitExpression trueBranch |> ignore
+        match falseBranchOpt with
+        | Some expr -> 
+            do printf " else "
+            do visitExpression expr |> ignore
+        | None -> do nothing
+        Succeeded ()
+    | SynExpr.LetOrUse (isRec, isUse, bindings, body, wholeRange) -> Succeeded ()
+    | SynExpr.Lambda (isFromMethod, isLaterPart, simplePatterns, body, range) -> Succeeded ()
+    | SynExpr.App (isAtomic, isInfix, funcExpr, argExpr, range) -> Succeeded () // function call (application)
+    | SynExpr.ArrayOrList (isList, exprs, range) -> Succeeded ()
+    | SynExpr.Tuple (exprs, commaRanges, range) -> Succeeded ()
+    | SynExpr.Typed (expr, typeName, range) -> Succeeded ()
+    | SynExpr.Record (baseOpt, copyInfoOpt, recordFields, range) -> Succeeded ()
+    | SynExpr.Paren (expr, leftRange, rightRangeOpt, wholeRange) -> Succeeded () // (expr)
+    | SynExpr.Match (seqPoint, expr, matchClauses, isExnMatch, range) -> Succeeded () // (match expr with pat1 -> expr1 | ... | patN -> exprN)
+    | SynExpr.LongIdent (isOptional, ident, altNameRefCell, range) -> Succeeded ()
+    | SynExpr.Ident (ident) -> Succeeded () // Same as LongIdent (false, ident, None, ident.Range)
+    | SynExpr.FromParseError (expr, range) -> Succeeded () // For error recovery
+    | _ -> FailedWith "Unsupported expression"
+    
     
     let rec typeToString = function
     | SynType.LongIdent (ident) -> identToString ident  
@@ -66,14 +93,14 @@ module Parser =
                         printf " : %s" (typeToString synType)
                     | None -> ()
                     do printf " = "
-                    do visitExpression body
+                    do visitExpression body |> ignore
                     printfn ""
                 // do printfn "%A" bindings
             | SynModuleDecl.Open(longIdentWithDots, range) ->
-                do printfn "open %s" (longIdentWithDots.Lid |> List.map (fun x -> x.idText) |> String.concat ".")
+                do printfn "open %s" (identToString longIdentWithDots)
                 
             | SynModuleDecl.DoExpr(sequencePointInfo, expression, range) ->
-                do printfn "do %A" expression
+                do visitExpression expression |> ignore
                 do printfn "with sequence point info %A" sequencePointInfo
             | _ -> ()
 
@@ -97,4 +124,3 @@ module Parser =
                 do printfn "No support for interface files"
         | FailedWith error -> 
             do Console.WriteLine error
-
