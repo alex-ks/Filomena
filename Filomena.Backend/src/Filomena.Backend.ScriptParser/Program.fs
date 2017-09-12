@@ -6,7 +6,11 @@ let source = """
 open IrisDataset
 open Ml.Knn
 
+let op_Division a b = a / b
+
 let rec fact x : int = if x <= 1 then 1 else x * fact (x - 1)
+
+let (a, _) as b = 2, 3
 
 let dataset = loadIrisDataset ()
 let testSize = Seq.length dataset / 3
