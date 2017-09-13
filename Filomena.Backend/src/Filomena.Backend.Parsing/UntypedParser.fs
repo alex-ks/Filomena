@@ -49,7 +49,7 @@ module UntypedParser =
     let visitConst constRange = function 
         | SynConst.Bool (flag) -> string flag
         | SynConst.Byte (bt) -> string bt
-        | SynConst.Bytes (bytes, range) -> 
+        | SynConst.Bytes (bytes, _) -> 
             bytes 
             |> Array.map (fun x -> string x) 
             |> String.concat "; "
@@ -58,11 +58,13 @@ module UntypedParser =
         | SynConst.Decimal (d) -> string d
         | SynConst.Double (d) -> string d
         | SynConst.Int32 (i) -> string i
-        | SynConst.Measure (mConst, measure) -> 
+        | SynConst.Measure (mConst, measure) ->
+            do ignore mConst
+            do ignore measure
             ChekingError.failwith "Measures are currently unsupported" constRange
         | SynConst.SByte (sb) -> string sb
         | SynConst.Single (s) -> string s
-        | SynConst.String (s, range) -> s |> sprintf "\"%s\""
+        | SynConst.String (s, _) -> s |> sprintf "\"%s\""
         | SynConst.UInt32 (u) -> string u
         | SynConst.Unit -> "()"
         | _ -> 

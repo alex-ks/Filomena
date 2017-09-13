@@ -8,7 +8,7 @@ module ProjectHelper =
         
     let projectFromScript source = 
         let name = tempFileName ()
-        do File.WriteAllText (name, String.Empty)
+        do File.WriteAllText (name, source)
         name
         
     let emptyProject () = projectFromScript String.Empty
