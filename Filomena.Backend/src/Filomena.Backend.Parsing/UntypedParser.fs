@@ -11,7 +11,7 @@ module UntypedParser =
         static member failwith (errors: FSharpErrorInfo []) = 
             raise (ParsingError (errors))
             
-    exception ChekingError of string * Range with
+    exception ChekingError of string * Range.range with
         static member failwith message range = 
             raise (ChekingError (message, range))
     
@@ -69,6 +69,66 @@ module UntypedParser =
         | SynConst.Unit -> "()"
         | _ -> 
             ChekingError.failwith "This constant is unsupported" constRange 
+            
+    let rec visitPattern = function
+        | SynPat.LongIdent (lid, _, _, _, _, _) -> Ident.toString lid
+        | SynPat.Named (synPat, ident, isSelfIdentifier, _, _) ->
+            do ignore isSelfIdentifier
+            match synPat with
+            | SynPat.Wild (_) -> Ident.idText ident
+            | _ -> sprintf "%s as %s" (visitPattern synPat) (Ident.idText ident)
+        | SynPat.Wild (_) -> "_"
+        | SynPat.Tuple (pats, _) -> 
+            pats 
+            |> List.map visitPattern
+            |> String.concat ", "
+        | SynPat.Paren (pat, _) -> 
+            visitPattern pat
+            |> sprintf "(%s)"
+        | SynPat.Const (synConst, range) -> visitConst range synConst
+        // Unsupported
+        | SynPat.Ands (_, range)
+        | SynPat.Attrib (_, _, range)
+        | SynPat.DeprecatedCharRange (_, _, range)
+        | SynPat.InstanceMember (_, _, _, _, range)
+        | SynPat.IsInst (_, range) // x :? int pattern in matching
+        | SynPat.Null (range)
+        | SynPat.OptionalVal (_, range) // for optional function arguments - let f x ?y
+        | SynPat.Or (_, _, range)
+        | SynPat.QuoteExpr (_, range)
+        | SynPat.Record (_, range)
+        | SynPat.StructTuple (_, range)
+        | SynPat.Typed (_, _, range)
+        | SynPat.ArrayOrList (_, _, range) ->
+            ChekingError.failwith "Pattern is unsupported" range
+        | SynPat.FromParseError (_, range) ->
+            ChekingError.failwith "Parse error" range
+
+    let rec visitExpression = function
+        | SynExpr.Const (c, range) -> c |> visitConst range
+        | SynExpr.IfThenElse (cond, trueBranch, falseBranchOpt, _, isFromErrorRecovery, _, range) ->
+            if not isFromErrorRecovery then
+                match falseBranchOpt with
+                | Some falseBranch ->
+                    [ "if"
+                      visitExpression cond
+                      "then"
+                      visitExpression trueBranch
+                      "else"
+                      visitExpression falseBranch ] 
+                | None ->
+                    [ "if"
+                      visitExpression cond
+                      "then"
+                      visitExpression trueBranch ]
+                |> String.concat " "
+            else
+                ChekingError.failwith "Parsing error" range
+        | _ -> 
+            // TODO: implement
+            failwith "Not implemented"
+        
+    
         
        
     
