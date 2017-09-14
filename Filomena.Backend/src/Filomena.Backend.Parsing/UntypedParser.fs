@@ -27,6 +27,14 @@ module UntypedParser =
     
     let defaultFileName = "#$DefaultFileName"
     let tab = "    "
+
+    let rec typeToString = function
+        | SynType.LongIdent (ident) -> Ident.toString ident  
+        | SynType.Array (n, elementType, range) -> typeToString elementType + "[]"
+        | SynType.Fun (argType, returnType, range) -> typeToString argType + "->" + typeToString returnType
+        | SynType.Tuple (typeNames, range) -> typeNames |> List.map (fun x -> snd x) |> List.map typeToString |> String.concat " * "
+        | SynType.Var (Typar(genericName, staticReq, isComplGenerated), range) -> genericName.idText // Generic type placeholder
+        | _ -> failwith "Not supported"
     
     let getUntypedTreeFromProject fileName source = 
         async {
@@ -127,6 +135,21 @@ module UntypedParser =
         | _ -> 
             // TODO: implement
             failwith "Not implemented"
+    
+    and visitBindings bindings = 
+        let visitBinding binding = 
+            // TODO: check kind and forbid mutable
+            let (Binding (_, kind, isInline, isMutable, _, _, data, pattern, retInfo, body, range, _)) = binding in
+            [ visitPattern pattern
+              (match retInfo with
+               | Some (SynBindingReturnInfo(synType, _, _)) -> ": " + typeToString synType
+               | None -> "") 
+              "="
+              visitExpression body ]
+            |> String.concat " "
+        bindings |> Seq.map visitBinding |> String.concat " and "
+
+
         
     
         
