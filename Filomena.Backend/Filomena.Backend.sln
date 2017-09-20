@@ -7,6 +7,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{576E56EA-6F6
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Filomena.Backend.Parsing", "src\Filomena.Backend.Parsing\Filomena.Backend.Parsing.fsproj", "{D6DDE90B-F4B2-478F-A34E-DFC249C3D99D}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{3D61FE42-AE02-44A1-AC40-D11AA95FECD9}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Filomena.Backend.ParsingTest", "test\Filomena.Backend.ParsingTest\Filomena.Backend.ParsingTest.fsproj", "{2D61507A-2378-4AC7-B624-0DD2B20A4257}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,11 +21,16 @@ Global
 		{D6DDE90B-F4B2-478F-A34E-DFC249C3D99D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D6DDE90B-F4B2-478F-A34E-DFC249C3D99D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D6DDE90B-F4B2-478F-A34E-DFC249C3D99D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D61507A-2378-4AC7-B624-0DD2B20A4257}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D61507A-2378-4AC7-B624-0DD2B20A4257}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D61507A-2378-4AC7-B624-0DD2B20A4257}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D61507A-2378-4AC7-B624-0DD2B20A4257}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{D6DDE90B-F4B2-478F-A34E-DFC249C3D99D} = {576E56EA-6F6F-4594-8D14-DD133881D26B}
+		{2D61507A-2378-4AC7-B624-0DD2B20A4257} = {3D61FE42-AE02-44A1-AC40-D11AA95FECD9}
 	EndGlobalSection
 EndGlobal
