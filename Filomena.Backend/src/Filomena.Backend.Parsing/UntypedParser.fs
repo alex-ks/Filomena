@@ -14,7 +14,7 @@ module UntypedParser =
     | CheckErrors of CheckError list 
     | FSharpErrors of FSharpErrorInfo []
 
-    let reduceResult accum next = 
+    let checkReduce accum next = 
         match next with
         | Ok () -> accum
         | Failed errors -> 
@@ -22,7 +22,7 @@ module UntypedParser =
             | Ok () -> Failed errors
             | Failed accumErrors -> Failed (accumErrors @ errors)
 
-    let reduceListResults accum next =
+    let gatherReduce accum next =
         match next with
         | Ok modulesList ->
             match accum with
@@ -92,7 +92,7 @@ module UntypedParser =
         | SynPat.Tuple (pats, _) -> 
             pats 
             |> List.map visitPattern
-            |> List.reduce reduceResult
+            |> List.reduce checkReduce
 
         | SynPat.Paren (pat, _) -> visitPattern pat
 
@@ -130,7 +130,7 @@ module UntypedParser =
                 | None ->
                     [ visitExpression cond
                       visitExpression trueBranch ]
-                |> List.reduce reduceResult
+                |> List.reduce checkReduce
             else
                 Failed [CheckError ("Parsing error", Some range)]
                 
@@ -140,7 +140,7 @@ module UntypedParser =
             else
                 [ visitBindings bindings
                   visitExpression body ] 
-                |> List.reduce reduceResult
+                |> List.reduce checkReduce
 
         | SynExpr.Lambda (_isFromMethod, _isLaterPart, _simplePatterns, _body, range) ->
             Failed [CheckError ("Lambdas are currently unsupported", Some range)]
@@ -150,17 +150,17 @@ module UntypedParser =
                 [visitExpression argExpr; visitExpression funcExpr]
             else
                 [visitExpression funcExpr; visitExpression argExpr]
-            |> List.reduce reduceResult
+            |> List.reduce checkReduce
 
         | SynExpr.ArrayOrList (_, exprs, _) ->
             exprs
             |> List.map visitExpression
-            |> List.reduce reduceResult
+            |> List.reduce checkReduce
 
         | SynExpr.Tuple (exprs, _, _) ->
             exprs
             |> List.map visitExpression
-            |> List.reduce reduceResult
+            |> List.reduce checkReduce
 
         | SynExpr.Typed (expr, _, _)
         | SynExpr.Paren (expr, _, _, _) ->
@@ -194,7 +194,7 @@ module UntypedParser =
                 if not isMutable then
                     [ visitPattern pattern
                       visitExpression body ]
-                    |> List.reduce reduceResult
+                    |> List.reduce checkReduce
                 else
                     Failed [CheckError ("Mutable values are not alowed", Some range)]
 
@@ -203,7 +203,7 @@ module UntypedParser =
 
         bindings 
         |> Seq.map visitBinding 
-        |> Seq.reduce reduceResult
+        |> Seq.reduce checkReduce
 
     let visitDeclarations decls = 
         decls
@@ -227,7 +227,7 @@ module UntypedParser =
             | _ ->
                 // TODO: handle all cases
                 Failed [CheckError ("Not implemented", None)])
-        |> Seq.reduce reduceListResults
+        |> Seq.reduce gatherReduce
 
     let visitModulesAndNamespaces modulesOrNss = 
         modulesOrNss
@@ -242,7 +242,7 @@ module UntypedParser =
                 Failed [CheckError ("Namespace declaration is not allowed", Some range)]
             else 
                 visitDeclarations moduleDecls)
-        |> Seq.reduce reduceListResults
+        |> Seq.reduce gatherReduce
 
     let parseAndCheckScript source = 
         let maybeTree = getUntypedTreeNoSettings source in
