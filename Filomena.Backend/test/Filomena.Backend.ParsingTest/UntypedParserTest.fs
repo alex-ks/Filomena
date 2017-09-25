@@ -2,18 +2,24 @@ namespace Filomena.Backend.ParsingTest
 
 open Xunit
 open Filomena.Backend.Parsing
+open Filomena.Backend.Parsing.UntypedParser
 
 module UntypedParserTest =
-    let mockPlatform = Platform ()
-
     [<Fact>]
     let ``"Hello, world!" parsing test failed because of no module name`` () =
         let source = "do printfn \"Hello, world!\""
-        try
-            do UntypedParser.parseAndCheckScript mockPlatform source |> ignore
-            Assert.False true
-        with
-        | UntypedParser.CheckingException (msg, range) -> Assert.True ("Module name must be defined" = msg)
+        
+        let parseResult = parseAndCheckScript source in
+        match parseAndCheckScript source with
+        | Failed (CheckErrors errors) -> 
+            match errors with
+            | [CheckError (msg, _)] -> 
+                do Assert.Equal(expected = "Module name must be defined", actual = msg)
+            | _ -> 
+                do Assert.True (false, "Unexpected error")
+        | _ -> 
+            do Assert.True (false, "Unexpected function result")
+
         
     [<Fact>]
     let ``Successfull "Hello, world!" parsing test with module definition`` () = 
@@ -21,6 +27,33 @@ module UntypedParserTest =
             module A
             do printfn "Hello, world!"
         """
-        do UntypedParser.parseAndCheckScript mockPlatform source |> ignore
+        let parseResults = parseAndCheckScript source in
+        match parseResults with
+        | Ok [] -> 
+            do Assert.True true
+        | _ -> 
+            do Assert.True (false, "Unexpected function result")
         
+        
+    [<Fact>]
+    let ``Successfull "Hello, world" parsing test with two open's`` () =
+        let source = """
+            module A
+            
+            open B
+            open C.D
+            
+            do printfn "Hello, world!"
+        """
+        let parseResults = parseAndCheckScript source in
+        match parseResults with
+        | Ok opensList ->
+            do Assert.Equal (expected = 2, actual = List.length opensList)
+            match opensList with
+            | [moduleB; moduleCD] -> 
+                do Assert.Equal (expected = "B", actual = moduleB)
+                do Assert.Equal (expected = "C.D", actual = moduleCD)
+            | _ -> 
+                do Assert.True (false, "Wrong open's list size")
+        | _ -> do Assert.True (false, "Function failed")
         

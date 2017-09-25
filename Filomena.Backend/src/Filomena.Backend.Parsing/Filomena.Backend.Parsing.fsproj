@@ -61,6 +61,7 @@
   <ItemGroup>
     <Compile Include="Mocks.fs" />
     <Compile Include="ProjectHelper.fs" />
+    <Compile Include="Maybe.fs" />
     <Compile Include="UntypedParser.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

@@ -8,5 +8,5 @@ let main args =
     module A
     do ignore ()
     """
-    printfn "%s" (UntypedParser.parseAndCheckScript (Platform ()) source)
+    printfn "%A" (UntypedParser.parseAndCheckScript source)
     0

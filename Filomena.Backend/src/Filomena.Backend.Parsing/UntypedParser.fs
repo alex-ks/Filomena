@@ -4,16 +4,34 @@ open Microsoft.FSharp.Compiler
 open Microsoft.FSharp.Compiler.SourceCodeServices
 open Microsoft.FSharp.Compiler.Ast
 
+open Filomena.Backend.Parsing // to hide ParserDetail union with Maybe union
 open Filomena.Backend.Parsing.ProjectHelper
 
 module UntypedParser =
-    exception ParsingException of FSharpErrorInfo [] with
-        static member failwith (errors: FSharpErrorInfo []) = 
-            raise (ParsingException (errors))
-            
-    exception CheckingException of string * Range.range with
-        static member failwith message range = 
-            raise (CheckingException (message, range))
+    type CheckError = CheckError of string * Range.range option
+
+    type ParseErrors = 
+    | CheckErrors of CheckError list 
+    | FSharpErrors of FSharpErrorInfo []
+
+    let reduceResult accum next = 
+        match next with
+        | Ok () -> accum
+        | Failed errors -> 
+            match accum with
+            | Ok () -> Failed errors
+            | Failed accumErrors -> Failed (accumErrors @ errors)
+
+    let reduceListResults accum next =
+        match next with
+        | Ok modulesList ->
+            match accum with
+            | Ok accumList -> Ok (accumList @ modulesList)
+            | Failed errorsList -> Failed errorsList
+        | Failed errorsList -> 
+            match accum with
+            | Ok _ -> Failed errorsList
+            | Failed accumErrors -> Failed (accumErrors @ errorsList)
     
     module Ident = 
         let idText (ident: Ident) = ident.idText
@@ -27,26 +45,16 @@ module UntypedParser =
             
     let checker = FSharpChecker.Create ()
     
-    let tab = "    "
-
-    let rec typeToString = function
-        | SynType.LongIdent (ident) -> Ident.toString ident  
-        | SynType.Array (n, elementType, range) -> typeToString elementType + "[]"
-        | SynType.Fun (argType, returnType, range) -> typeToString argType + "->" + typeToString returnType
-        | SynType.Tuple (typeNames, range) -> typeNames |> List.map (snd >> typeToString) |> String.concat " * "
-        | SynType.Var (Typar(genericName, staticReq, isComplGenerated), range) -> genericName.idText // Generic type placeholder
-        | _ -> failwith "Not supported"
-    
     let getUntypedTreeFromProject fileName source = 
         
         let projOptions, errors = checker.GetProjectOptionsFromScript (fileName, source) |> Async.RunSynchronously in
         if errors.Length = 0 then    
             let parseFileResults = checker.ParseFileInProject (fileName, source, projOptions) |> Async.RunSynchronously in
             match parseFileResults.ParseTree with
-            | Some tree -> tree
-            | None -> ParsingException.failwith parseFileResults.Errors
+            | Some tree -> Ok tree
+            | None -> Failed parseFileResults.Errors
         else
-            ParsingException.failwith (List.toArray errors)
+            Failed (List.toArray errors)
         
         
     let getUntypedTree source = getUntypedTreeFromProject (projectFromScript source) source
@@ -54,45 +62,42 @@ module UntypedParser =
     let getUntypedTreeNoSettings source = getUntypedTreeFromProject (emptyProject ()) source
     
     let visitConst constRange = function 
-        | SynConst.Bool (flag) -> string flag
-        | SynConst.Byte (bt) -> string bt
-        | SynConst.Bytes (bytes, _) -> 
-            bytes 
-            |> Array.map string
-            |> String.concat "; "
-            |> sprintf "[|%s|]"
-        | SynConst.Char (ch) -> string ch
-        | SynConst.Decimal (d) -> string d
-        | SynConst.Double (d) -> string d
-        | SynConst.Int32 (i) -> string i
-        | SynConst.Measure (mConst, measure) ->
-            do ignore mConst
-            do ignore measure
-            CheckingException.failwith "Measures are currently unsupported" constRange
-        | SynConst.SByte (sb) -> string sb
-        | SynConst.Single (s) -> string s
-        | SynConst.String (s, _) -> s |> sprintf "\"%s\""
-        | SynConst.UInt32 (u) -> string u
-        | SynConst.Unit -> "()"
+        | SynConst.Bool _
+        | SynConst.Byte _
+        | SynConst.Bytes _
+        | SynConst.Char _
+        | SynConst.Decimal _
+        | SynConst.Double _
+        | SynConst.Int32 _
+        | SynConst.SByte _
+        | SynConst.Single _
+        | SynConst.String _
+        | SynConst.UInt32 _
+        | SynConst.Unit ->
+            Ok ()
+
+        | SynConst.Measure _ ->
+            Failed [CheckError ("Measures are currently unsupported", Some constRange)]
+
         | _ -> 
-            CheckingException.failwith "This constant is unsupported" constRange 
-            
+            Failed [CheckError ("This constant is unsupported", Some constRange)]
+
     let rec visitPattern = function
-        | SynPat.LongIdent (lid, _, _, _, _, _) -> Ident.toString lid
-        | SynPat.Named (synPat, ident, isSelfIdentifier, _, _) ->
-            do ignore isSelfIdentifier
-            match synPat with
-            | SynPat.Wild (_) -> Ident.idText ident
-            | _ -> sprintf "%s as %s" (visitPattern synPat) (Ident.idText ident)
-        | SynPat.Wild (_) -> "_"
+        | SynPat.LongIdent _ -> Ok ()
+
+        | SynPat.Named (synPat, _, _, _, _) -> visitPattern synPat
+
+        | SynPat.Wild (_) -> Ok ()
+
         | SynPat.Tuple (pats, _) -> 
             pats 
             |> List.map visitPattern
-            |> String.concat ", "
-        | SynPat.Paren (pat, _) -> 
-            visitPattern pat
-            |> sprintf "(%s)"
+            |> List.reduce reduceResult
+
+        | SynPat.Paren (pat, _) -> visitPattern pat
+
         | SynPat.Const (synConst, range) -> visitConst range synConst
+        
         // Unsupported
         | SynPat.Ands (_, range)
         | SynPat.Attrib (_, _, range)
@@ -107,146 +112,149 @@ module UntypedParser =
         | SynPat.StructTuple (_, range)
         | SynPat.Typed (_, _, range)
         | SynPat.ArrayOrList (_, _, range) ->
-            CheckingException.failwith "Pattern is unsupported" range
+            Failed [CheckError ("Pattern is unsupported", Some range)]
+            
         | SynPat.FromParseError (_, range) ->
-            CheckingException.failwith "Parse error" range
+            Failed [CheckError ("Parse error", Some range)]
 
     let rec visitExpression = function
-        | SynExpr.Const (c, range) -> c |> visitConst range
+        | SynExpr.Const (c, range) -> visitConst range c
+
         | SynExpr.IfThenElse (cond, trueBranch, falseBranchOpt, _, isFromErrorRecovery, _, range) ->
             if not isFromErrorRecovery then
                 match falseBranchOpt with
                 | Some falseBranch ->
-                    [ "if"
-                      visitExpression cond
-                      "then"
+                    [ visitExpression cond
                       visitExpression trueBranch
-                      "else"
-                      visitExpression falseBranch ] 
+                      visitExpression falseBranch ]
                 | None ->
-                    [ "if"
-                      visitExpression cond
-                      "then"
+                    [ visitExpression cond
                       visitExpression trueBranch ]
-                |> String.concat " "
+                |> List.reduce reduceResult
             else
-                CheckingException.failwith "Parsing error" range
+                Failed [CheckError ("Parsing error", Some range)]
+                
         | SynExpr.LetOrUse (isRec, isUse, bindings, body, wholeRange) ->
-            if isRec then CheckingException.failwith "Recursion is not allowed" wholeRange
-            elif isUse then CheckingException.failwith "Using construct is not allowed" wholeRange
+            if isRec then Failed [CheckError ("Recursion is not allowed", Some wholeRange)]
+            elif isUse then Failed [CheckError ("Using construct is not allowed", Some wholeRange)]
             else
-                [ "let"
-                  visitBindings bindings
-                  "in"
+                [ visitBindings bindings
                   visitExpression body ] 
-                |> String.concat " "
+                |> List.reduce reduceResult
+
         | SynExpr.Lambda (_isFromMethod, _isLaterPart, _simplePatterns, _body, range) ->
-            CheckingException.failwith "Lambdas are currently unsupported" range
+            Failed [CheckError ("Lambdas are currently unsupported", Some range)]
+
         | SynExpr.App (_, isInfix, funcExpr, argExpr, _) ->
             if isInfix then 
                 [visitExpression argExpr; visitExpression funcExpr]
             else
                 [visitExpression funcExpr; visitExpression argExpr]
-            |> String.concat " "
-        | SynExpr.ArrayOrList (isList, exprs, _) ->
-            List.map visitExpression exprs |> String.concat "; "
-            |> if isList then sprintf "[ %s ]" else sprintf "[| %s |]"
+            |> List.reduce reduceResult
+
+        | SynExpr.ArrayOrList (_, exprs, _) ->
+            exprs
+            |> List.map visitExpression
+            |> List.reduce reduceResult
+
         | SynExpr.Tuple (exprs, _, _) ->
             exprs
             |> List.map visitExpression
-            |> String.concat ", "
-        | SynExpr.Typed (expr, typeName, _) ->
-            [ visitExpression expr
-              ": "
-              typeToString typeName ]
-            |> String.concat ""
+            |> List.reduce reduceResult
+
+        | SynExpr.Typed (expr, _, _)
         | SynExpr.Paren (expr, _, _, _) ->
-            visitExpression expr |> sprintf "(%s)"
-        | SynExpr.LongIdent (_, ident, _, _) ->
-            Ident.toString ident
-        | SynExpr.Ident (ident) ->
-            Ident.idText ident
-        | SynExpr.Do (expr, range) ->
+            visitExpression expr
+
+        | SynExpr.LongIdent _
+        | SynExpr.Ident _ ->
+            Ok ()
+
+        | SynExpr.Do (expr, _) ->
             visitExpression expr 
+
         | SynExpr.Match (_seqPoint, _expr, _matchClauses, _isExnMatch, range) ->
-            CheckingException.failwith "Match is currently unsupported" range
+            Failed [CheckError ("Match is currently unsupported", Some range)]
+
         | SynExpr.FromParseError (_, range) ->
-            CheckingException.failwith "Parse error" range
+            Failed [CheckError ("Parse error", Some range)]
+
         | _ -> 
             // TODO: implement
-            failwith "Not implemented"
+            Failed [CheckError ("Not implemented", None)]
     
     and visitBindings bindings = 
         let visitBinding binding = 
-            let (Binding (_, kind, _, isMutable, _, _, _, pattern, retInfo, body, range, _)) = binding in
+            let (Binding (_, kind, _, isMutable, _, _, _, pattern, _, body, range, _)) = binding in
             match kind with
             | SynBindingKind.DoBinding ->
-                CheckingException.failwith "Such 'do' usage is not allowed" range
+                Failed [CheckError ("Such 'do' usage is not allowed", Some range)]
+
             | SynBindingKind.NormalBinding ->
                 if not isMutable then
                     [ visitPattern pattern
-                      (match retInfo with
-                       | Some (SynBindingReturnInfo(synType, _, _)) -> ": " + typeToString synType
-                       | None -> "") 
-                      "="
                       visitExpression body ]
-                    |> String.concat " "
+                    |> List.reduce reduceResult
                 else
-                    CheckingException.failwith "Mutable values are not alowed" range
-            | SynBindingKind.StandaloneExpression ->
-                CheckingException.failwith "Standalone expressions are not allowed" range
-        bindings |> Seq.map visitBinding |> String.concat " and "
+                    Failed [CheckError ("Mutable values are not alowed", Some range)]
 
-    let visitDeclarations platform decls = 
+            | SynBindingKind.StandaloneExpression ->
+                Failed [CheckError ("Standalone expressions are not allowed", Some range)]
+
+        bindings 
+        |> Seq.map visitBinding 
+        |> Seq.reduce reduceResult
+
+    let visitDeclarations decls = 
         decls
         |> Seq.map (function
             | SynModuleDecl.Let (isRec, bindings, range) ->
                 if not isRec then
-                    [ "let"; visitBindings bindings ] |> String.concat " "
+                    match visitBindings bindings with
+                    | Ok () -> Ok []
+                    | Failed lst -> Failed lst
                 else
-                    CheckingException.failwith "Recursion is not allowed" range
+                    Failed [CheckError ("Recursion is not allowed", Some range)]
+
             | SynModuleDecl.DoExpr (_sequencePointInfo, expression, _) ->
-                [ "do"; visitExpression expression] |> String.concat " "
-            | SynModuleDecl.Open (ident, range) ->
-                try
-                    Ident.toString ident
-                    |> Platform.getModuleDefinition platform
-                with
-                | _ -> CheckingException.failwith "Unknown module" range
+                match visitExpression expression with
+                | Ok () -> Ok []
+                | Failed lst -> Failed lst
+
+            | SynModuleDecl.Open (ident, _) ->
+                Ok [Ident.toString ident]
+
             | _ ->
                 // TODO: handle all cases
-                failwith "Not implemented")
-        |> String.concat System.Environment.NewLine
+                Failed [CheckError ("Not implemented", None)])
+        |> Seq.reduce reduceListResults
 
-    let visitModulesAndNamespaces platform modulesOrNss = 
-        do ignore<Platform> platform
+    let visitModulesAndNamespaces modulesOrNss = 
         modulesOrNss
         |> Seq.map (fun moduleOrNs ->
             let (SynModuleOrNamespace(longIdent, isRecursive, isModule, moduleDecls, _, _, _, range)) = moduleOrNs
             let moduleName = Ident.listToString longIdent
             if moduleName |> isTemp then 
-                CheckingException.failwith "Module name must be defined" range
+                Failed [CheckError ("Module name must be defined", Some range)]
             elif isRecursive then 
-                CheckingException.failwith "Recursion is not allowed" range
+                Failed [CheckError ("Recursion is not allowed", Some range)]
             elif not isModule then 
-                CheckingException.failwith "Namespace declaration is not allowed" range
+                Failed [CheckError ("Namespace declaration is not allowed", Some range)]
             else 
-                visitDeclarations platform moduleDecls)
-        |> String.concat System.Environment.NewLine
+                visitDeclarations moduleDecls)
+        |> Seq.reduce reduceListResults
 
-    let parseAndCheckScript platform source = 
-        let tree = getUntypedTreeNoSettings source in
-        match tree with
-        | ParsedInput.ImplFile (file) ->
-            let (ParsedImplFileInput(_, _, _, _, _, modules, _)) = file in
-            visitModulesAndNamespaces platform modules
-        | ParsedInput.SigFile _ ->
-            failwith "Interface files are not supported"
-
-
-
-        
-    
-        
-       
-    
+    let parseAndCheckScript source = 
+        let maybeTree = getUntypedTreeNoSettings source in
+        match maybeTree with
+        | Ok tree -> 
+            match tree with
+            | ParsedInput.ImplFile (file) ->
+                let (ParsedImplFileInput(_, _, _, _, _, modules, _)) = file in
+                match visitModulesAndNamespaces modules with
+                | Ok modulesList -> Ok modulesList
+                | Failed errorsList -> Failed (CheckErrors errorsList)
+            | ParsedInput.SigFile _ ->
+                Failed (CheckErrors [CheckError ("Interface files are not supported", None)])
+        | Failed errors -> 
+            Failed (FSharpErrors errors)
