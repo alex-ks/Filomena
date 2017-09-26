@@ -10,7 +10,7 @@ module UntypedParserTest =
         let source = "do printfn \"Hello, world!\""
         
         let parseResult = parseAndCheckScript source in
-        match parseAndCheckScript source with
+        match parseResult with
         | Failed (CheckErrors errors) -> 
             match errors with
             | [CheckError (msg, _)] -> 

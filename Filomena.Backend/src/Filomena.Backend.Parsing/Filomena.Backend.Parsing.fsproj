@@ -63,6 +63,7 @@
     <Compile Include="ProjectHelper.fs" />
     <Compile Include="Maybe.fs" />
     <Compile Include="UntypedParser.fs" />
+    <Compile Include="TypedParser.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <PropertyGroup>
