@@ -47,13 +47,27 @@ module UntypedParserTest =
         """
         let parseResults = parseAndCheckScript source in
         match parseResults with
-        | Ok opensList ->
-            do Assert.Equal (expected = 2, actual = List.length opensList)
-            match opensList with
-            | [moduleB; moduleCD] -> 
-                do Assert.Equal (expected = "B", actual = moduleB)
-                do Assert.Equal (expected = "C.D", actual = moduleCD)
-            | _ -> 
-                do Assert.True (false, "Wrong open's list size")
-        | _ -> do Assert.True (false, "Function failed")
+        | Ok [moduleB; moduleCD] -> 
+            do Assert.Equal (expected = "B", actual = moduleB)
+            do Assert.Equal (expected = "C.D", actual = moduleCD)
+        | Ok _ -> 
+            do Assert.True (false, "Wrong open's list size")
+        | _ -> 
+            do Assert.True (false, "Function failed")
+            
+    [<Fact>]
+    let ``Script parsing failed because of nested modules`` () =
+        // TODO: implement
+        Assert.False true
+        
+    [<Fact>]
+    let ``Script parsing failed because of multiple modules`` () = 
+        // TODO: implement
+        Assert.False true
+        
+    [<Fact>]
+    let ``Script parsing failed because of namespace declaration`` () = 
+        // TODO: implement
+        Assert.False true
+        
         
