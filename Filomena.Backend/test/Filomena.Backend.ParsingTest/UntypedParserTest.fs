@@ -11,12 +11,10 @@ module UntypedParserTest =
         
         let parseResult = parseAndCheckScript source in
         match parseResult with
-        | Failed (CheckErrors errors) -> 
-            match errors with
-            | [CheckError (msg, _)] -> 
-                do Assert.Equal(expected = "Module name must be defined", actual = msg)
-            | _ -> 
-                do Assert.True (false, "Unexpected error")
+        | Failed (CheckErrors [CheckError (msg, _)]) ->
+            do Assert.Equal(expected = "Module name must be defined", actual = msg)
+        | Failed (CheckErrors _) -> 
+            do Assert.True (false, "Unexpected error")
         | _ -> 
             do Assert.True (false, "Unexpected function result")
 

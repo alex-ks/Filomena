@@ -5,13 +5,13 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{D6DDE90B-F4B2-478F-A34E-DFC249C3D99D}</ProjectGuid>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>Filomena.Backend.Parsing</RootNamespace>
-    <AssemblyName>Filomena.Backend.Parsing</AssemblyName>
+    <ProjectGuid>{AE23BC23-F940-437A-99BD-E8304650FD6F}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Filomena.Backend.Models</RootNamespace>
+    <AssemblyName>Filomena.Backend.Models</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <Name>Filomena.Backend.Parsing</Name>
+    <Name>Filomena.Backend.Models</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -33,21 +33,12 @@
     <OtherFlags>--warnon:1182</OtherFlags>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="FSharp.Compiler.Service, Version=13.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\..\packages\FSharp.Compiler.Service.13.0.0\lib\net45\FSharp.Compiler.Service.dll</HintPath>
-    </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="System" />
-    <Reference Include="System.Collections.Immutable, Version=1.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\..\packages\System.Collections.Immutable.1.3.1\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
-    </Reference>
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
     <Reference Include="FSharp.Core">
       <HintPath>..\..\packages\FSharp.Core.4.1.17\lib\net45\FSharp.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Reflection.Metadata, Version=1.4.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <HintPath>..\..\packages\System.Reflection.Metadata.1.4.2\lib\portable-net45+win8\System.Reflection.Metadata.dll</HintPath>
     </Reference>
     <Reference Include="System.ValueTuple">
       <HintPath>..\..\packages\System.ValueTuple.4.3.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
@@ -55,22 +46,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <None Include="packages.config" />
+    <Compile Include="Models.fs" />
     <None Include="Script.fsx" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Mocks.fs" />
-    <Compile Include="ProjectHelper.fs" />
-    <Compile Include="Maybe.fs" />
-    <Compile Include="UntypedParser.fs" />
-    <Compile Include="TypedParser.fs" />
-    <Compile Include="Program.fs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Filomena.Backend.Models\Filomena.Backend.Models.fsproj">
-      <Project>{ae23bc23-f940-437a-99bd-e8304650fd6f}</Project>
-      <Name>Filomena.Backend.Models</Name>
-    </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>

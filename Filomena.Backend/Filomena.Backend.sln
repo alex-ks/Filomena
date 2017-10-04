@@ -11,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{3D61FE42-A
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Filomena.Backend.ParsingTest", "test\Filomena.Backend.ParsingTest\Filomena.Backend.ParsingTest.fsproj", "{2D61507A-2378-4AC7-B624-0DD2B20A4257}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Filomena.Backend.Models", "src\Filomena.Backend.Models\Filomena.Backend.Models.fsproj", "{AE23BC23-F940-437A-99BD-E8304650FD6F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +27,10 @@ Global
 		{2D61507A-2378-4AC7-B624-0DD2B20A4257}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2D61507A-2378-4AC7-B624-0DD2B20A4257}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2D61507A-2378-4AC7-B624-0DD2B20A4257}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE23BC23-F940-437A-99BD-E8304650FD6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE23BC23-F940-437A-99BD-E8304650FD6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE23BC23-F940-437A-99BD-E8304650FD6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE23BC23-F940-437A-99BD-E8304650FD6F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -32,5 +38,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{D6DDE90B-F4B2-478F-A34E-DFC249C3D99D} = {576E56EA-6F6F-4594-8D14-DD133881D26B}
 		{2D61507A-2378-4AC7-B624-0DD2B20A4257} = {3D61FE42-AE02-44A1-AC40-D11AA95FECD9}
+		{AE23BC23-F940-437A-99BD-E8304650FD6F} = {576E56EA-6F6F-4594-8D14-DD133881D26B}
 	EndGlobalSection
 EndGlobal

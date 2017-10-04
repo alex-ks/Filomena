@@ -2,6 +2,7 @@ namespace Filomena.Backend.Parsing
 
 open Microsoft.FSharp.Compiler.SourceCodeServices
 
+open Filomena.Backend.Models
 open Filomena.Backend.Parsing.ProjectHelper
 
 module TypedParser = 
@@ -49,3 +50,27 @@ module TypedParser =
     
     let checkSingleFileNoSettings source = checkSingleFileFromScript (emptyProject ()) source
 
+    let visitDeclarations declaration = 
+        match declaration with
+        | FSharpImplementationFileDeclaration.Entity (entity, subDecls) ->
+            Ok ()
+        | FSharpImplementationFileDeclaration.InitAction (expr) ->
+            Ok ()
+        | FSharpImplementationFileDeclaration.MemberOrFunctionOrValue (funcOrVal, funcOrValss, expression) ->
+            Ok ()
+            
+    let (|Module|) (x: FSharpEntity) = if x.IsFSharpModule then Some x else None
+            
+    let treeToComputationGraph (implFile: FSharpImplementationFileContents) =
+        match implFile.Declarations with
+        | [Entity(Module _, subdecls)] ->
+            subdecls
+            |> List.map visitDeclarations
+            |> List.reduce (fun accum next -> Ok ()) // TODO: implement
+        | [_] -> 
+            Failed "Top-level declaration can be module only"
+        | [] ->
+            Failed "Empty file"
+        | _ ->
+            Failed "Too many declarations"
+        
