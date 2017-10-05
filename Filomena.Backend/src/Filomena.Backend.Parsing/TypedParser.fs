@@ -50,22 +50,28 @@ module TypedParser =
     
     let checkSingleFileNoSettings source = checkSingleFileFromScript (emptyProject ()) source
 
-    let visitDeclarations declaration = 
+    let rec visitExpression graph expr = Ok ()
+
+    let (|Function|) (x: FSharpMemberOrFunctionOrValue) = x.FullType.IsFunctionType
+
+    let visitDeclarations graph declaration = 
         match declaration with
         | FSharpImplementationFileDeclaration.Entity (entity, subDecls) ->
-            Ok ()
+            Failed "Nested types or modules are not allowed"
         | FSharpImplementationFileDeclaration.InitAction (expr) ->
-            Ok ()
+            visitExpression graph expr
         | FSharpImplementationFileDeclaration.MemberOrFunctionOrValue (funcOrVal, funcOrValss, expression) ->
+            
             Ok ()
             
     let (|Module|) (x: FSharpEntity) = if x.IsFSharpModule then Some x else None
-            
+    
     let treeToComputationGraph (implFile: FSharpImplementationFileContents) =
         match implFile.Declarations with
         | [Entity(Module _, subdecls)] ->
             subdecls
-            |> List.map visitDeclarations
+            //|> List.map (ComputationGraph.empty () |> visitDeclarations)
+            |> List.map (visitDeclarations <| ComputationGraph.empty ())
             |> List.reduce (fun accum next -> Ok ()) // TODO: implement
         | [_] -> 
             Failed "Top-level declaration can be module only"
