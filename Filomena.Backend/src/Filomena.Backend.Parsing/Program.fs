@@ -9,6 +9,7 @@ let print x = printfn "%A" x
 let main args =
     let source = """
     module A
+    let seqP = 2; "atata"
     let s:string = 7
     let loadInt (key: string) = int key
     let myAdd x y = x + y
@@ -17,6 +18,7 @@ let main args =
     let doSmt (x, y) z =
         do print x
         let a = 1
+        let a' = 1.5
         print y
         let b = 2
         do print z
