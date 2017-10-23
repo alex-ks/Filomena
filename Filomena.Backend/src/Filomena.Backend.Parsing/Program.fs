@@ -9,8 +9,10 @@ let print x = printfn "%A" x
 let main args =
     let source = """
     module A
+    let x, y = 2, 3
     let seqP = 2; "atata"
     let s:string = 7
+    let apply f x = f x
     let loadInt (key: string) = int key
     let myAdd x y = x + y
     let myInc = myAdd 1
@@ -23,6 +25,7 @@ let main args =
         let b = 2
         do print z
         let c = 3
+        do myInc |> apply |> ignore
         do (myAdd 2 2) |> myInc |> ignore
         let d = 4 in
         (x + y) * z

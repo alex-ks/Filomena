@@ -58,7 +58,9 @@ module TypedParser =
             else Some (t.GenericArguments |> Seq.map typeToModel |> Seq.toList) in
         { name = name; parameters = parameters }
 
-    type ExpressionProduct = SourceOperation of int | Mnemonic of string
+    type ExpressionProduct = 
+        | SourceOperation of int // indicates that expression results to some value produced by operation with index returned
+        | Mnemonic of string // indicates that expression results to some known value identified by mnemonic name returned
 
     let rec visitExpression graph metaValues expr =
         let valueSources, duplicates = metaValues
@@ -87,6 +89,7 @@ module TypedParser =
         | BasicPatterns.Call (objExprOpt, memberOrFuc, typeArgs1, typeArgs2, argExprs) ->
             Failed "Not implemented" // TODO: implement
         | BasicPatterns.Application (funExpr, typeArgs, argExprs) ->
+
             Failed "Not implemented" // TODO: implement
         | BasicPatterns.Let ((bindVar, bindExpr), bodyExpr) ->
             maybe {
@@ -101,6 +104,7 @@ module TypedParser =
                         visitExpression graph (valueSources, duplicates) bodyExpr 
             }            
         | BasicPatterns.Value (value) ->
+            // TODO: value may be function!
             match duplicates |> Map.tryFind value.CompiledName with
             | Some mnemonic ->
                 Ok (graph, Mnemonic mnemonic)
@@ -134,12 +138,12 @@ module TypedParser =
 
     let visitDeclarations graph declaration = 
         match declaration with
-        | FSharpImplementationFileDeclaration.Entity (entity, subDecls) ->
+        | Entity (entity, subDecls) ->
             Failed "Nested types or modules are not allowed"
-        | FSharpImplementationFileDeclaration.InitAction (expr) ->
+        | InitAction (expr) ->
             // visitExpression graph expr
             Ok ()
-        | FSharpImplementationFileDeclaration.MemberOrFunctionOrValue (funcOrVal, funcOrValss, expression) ->
+        | MemberOrFunctionOrValue (funcOrVal, funcOrValss, expression) ->
             
             Ok ()
             
