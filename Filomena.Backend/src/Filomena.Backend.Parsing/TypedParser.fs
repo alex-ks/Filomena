@@ -52,7 +52,7 @@ module TypedParser =
     let checkSingleFileNoSettings source = checkSingleFileFromScript (emptyProject ()) source
 
     let rec typeToModel (t: FSharpType) =
-        let name = t.TypeDefinition.CompiledName
+        let name = t.TypeDefinition.FullName
         let parameters = 
             if t.GenericArguments.Count = 0 then None 
             else Some (t.GenericArguments |> Seq.map typeToModel |> Seq.toList) in
@@ -62,57 +62,91 @@ module TypedParser =
         | SourceOperation of int // indicates that expression results to some value produced by operation with index returned
         | Mnemonic of string // indicates that expression results to some known value identified by mnemonic name returned
 
+    let uniqueName () = System.Guid.NewGuid () |> sprintf "%A"
+
     let rec visitExpression graph metaValues expr =
-        let valueSources, duplicates = metaValues
+        let valueSources, duplicates, outputs = metaValues
+        let rec escapeName graph metaValues name = 
+            let valueSources, duplicates = metaValues
+            let containsName map = Map.containsKey name map in
+            if graph.mnemonicsTable |> containsName 
+                || valueSources |> containsName 
+                || duplicates |> containsName 
+            then 
+                escapeName graph metaValues (name + "'")
+            else 
+                name
+        let nameExpression graph metaValues (expr: FSharpExpr) = 
+            maybe { let! _, product = visitExpression graph metaValues expr in
+                    return 
+                        match product with
+                        | Mnemonic name -> name
+                        | _ -> expr.Type.TypeDefinition.FullName }
+        let bindExpressionName graph metaValues bindVar bindExpr = 
+            maybe { let name = escapeName graph metaValues bindVar
+                    let! newGraph, product = visitExpression graph metaValues bindExpr in
+                    return 
+                        match product with
+                        | SourceOperation code ->
+                            let updatedSources = valueSources |> Map.add name code in
+                            newGraph, (updatedSources, duplicates)
+                        | Mnemonic value ->
+                            let updatedDuplicates = duplicates |> Map.add name value in
+                            newGraph, (valueSources, updatedDuplicates) } in
         match expr with
         | BasicPatterns.Sequential (firstExpr, secondExpr) -> 
-            maybe {
-                let! newGraph, firstProd = visitExpression graph metaValues firstExpr
-                let! lastGraph, secondProd = visitExpression newGraph metaValues secondExpr in
-                return
-                    match firstProd, secondProd with
-                    | SourceOperation firstOp, SourceOperation secondOp ->
-                        if lastGraph.dependencies.[secondOp] |> Set.contains firstOp then
-                            lastGraph, SourceOperation secondOp // TODO: check if opcode is correct
-                        else
-                            let newDependencies = 
-                                lastGraph.dependencies 
-                                |> List.mapi (fun i deps -> if i = secondOp then Set.add firstOp deps else deps) in
-                            { operations = lastGraph.operations; 
-                              dependencies = newDependencies; 
-                              mnemonicsTable = lastGraph.mnemonicsTable }, SourceOperation secondOp // TODO: check if opcode is correct
-                    | _, SourceOperation secondOp ->
-                        lastGraph, SourceOperation secondOp
-                    | _, Mnemonic secondVal ->
-                        lastGraph, Mnemonic secondVal                
-            }          
+            maybe { let! newGraph, firstProd = visitExpression graph metaValues firstExpr
+                    let! lastGraph, secondProd = visitExpression newGraph metaValues secondExpr in
+                    return
+                        match firstProd, secondProd with
+                        | SourceOperation firstOp, SourceOperation secondOp ->
+                            if lastGraph.dependencies.[secondOp] |> Set.contains firstOp then
+                                lastGraph, SourceOperation secondOp // TODO: check if opcode is correct
+                            else
+                                let newDependencies = 
+                                    lastGraph.dependencies 
+                                    |> List.mapi (fun i deps -> if i = secondOp then Set.add firstOp deps else deps) in
+                                { operations = lastGraph.operations; 
+                                  dependencies = newDependencies; 
+                                  mnemonicsTable = lastGraph.mnemonicsTable }, SourceOperation secondOp // TODO: check if opcode is correct
+                        | _ ->
+                            lastGraph, secondProd }
+        // TODO: ensure that operations cannot be used as arguments
         | BasicPatterns.Call (objExprOpt, memberOrFuc, typeArgs1, typeArgs2, argExprs) ->
-            Failed "Not implemented" // TODO: implement
+            maybe { let objArg = 
+                        match objExprOpt with
+                        | Some objExpr -> let! name = nameExpression graph metaValues objExprOpt in [name]
+                        | None -> []
+                    let output = escapeName graph metaValues (memberOrFuc.FullName + "Output")
+                    let ((updatedGraph, updatedMetavals),argsList) = 
+                        argExprs
+                        |> List.fold (fun ((graph, metaVals), names) x -> 
+                            maybe { let name = nameExpression graph metaVals x
+                                    let escapedName = escapeName name
+                                    let! graphAndMeta = bindExpressionName graph metaVals x in
+                                    return graphAndMeta, escapeName :: names }) ((bindExpressionName graph metaValues output), [])
+                    let a = 7
+                    
+                    return (updatedGraph, (SourceOperation 0))         
+            }
+                    
+            // Failed "Not implemented" // TODO: implement
         | BasicPatterns.Application (funExpr, typeArgs, argExprs) ->
 
             Failed "Not implemented" // TODO: implement
-        | BasicPatterns.Let ((bindVar, bindExpr), bodyExpr) ->
-            maybe {
-                let! newGraph, product = visitExpression graph metaValues bindExpr
-                return! 
-                    match product with
-                    | SourceOperation code ->
-                        let updatedSources = valueSources |> Map.add bindVar.CompiledName code in
-                        visitExpression graph (updatedSources, duplicates) bodyExpr
-                    | Mnemonic value ->
-                        let updatedDuplicates = Map.add bindVar.CompiledName value duplicates in
-                        visitExpression graph (valueSources, duplicates) bodyExpr 
-            }            
+        | BasicPatterns.Let ((bindVar, bindExpr), bodyExpr) -> 
+            maybe { let! newGraph, newMetavalues = bindExpressionName graph metaValues bindVar.FullName bindExpr in            
+                    return! visitExpression newGraph newMetavalues bodyExpr }
         | BasicPatterns.Value (value) ->
             // TODO: value may be function!
-            match duplicates |> Map.tryFind value.CompiledName with
+            match duplicates |> Map.tryFind value.FullName with
             | Some mnemonic ->
                 Ok (graph, Mnemonic mnemonic)
             | None ->
-                Ok (graph, Mnemonic value.CompiledName)
+                Ok (graph, Mnemonic value.FullName)
         | BasicPatterns.Const (constValObj, constType) ->
             let mnemonicValue = { dataType = typeToModel constType; value = string constValObj } // TODO: check if custom ToString needed
-            let mnemonic = System.Guid.NewGuid () |> sprintf "#%A"
+            let mnemonic = uniqueName ()
             let updatedGraph = { operations = graph.operations;
                                  dependencies = graph.dependencies;
                                  mnemonicsTable = Map.add mnemonic mnemonicValue graph.mnemonicsTable } in

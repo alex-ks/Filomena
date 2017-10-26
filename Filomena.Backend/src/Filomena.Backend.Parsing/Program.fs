@@ -10,6 +10,7 @@ let main args =
     let source = """
     module A
     let x, y = 2, 3
+    let z, t = 5, 6
     let seqP = 2; "atata"
     let s:string = 7
     let apply f x = f x
