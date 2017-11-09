@@ -61,11 +61,31 @@ module TypedParser =
     type ExpressionProduct = 
         | SourceOperation of int // indicates that expression results to some value produced by operation with index returned
         | Mnemonic of string // indicates that expression results to some known value identified by mnemonic name returned
+        | Operation of string // indicates that expression results to sone known function identified by full entity name
 
     let uniqueName () = System.Guid.NewGuid () |> sprintf "%A"
 
-    let rec visitExpression graph metaValues expr =
-        let valueSources, duplicates, outputs = metaValues
+    let rec visitExpression (name: string option) (parsedProgram: ParsedProgram) (expr: FSharpExpr) = 
+        match expr with
+        | BasicPatterns.Let ((bindVar, bindExpr), bodyExpr) ->
+            Failed "Oops"
+        | BasicPatterns.Call (objExpr, memberOrFunc, typeArgs1, typeArgs2, argsExprs) ->
+            Failed "Oops"
+        | BasicPatterns.Value (value) ->
+            Failed "Oops"
+        | BasicPatterns.Const (objVal, fsType) ->
+            let dataType = typeToModel fsType
+            let mnemoName = 
+                match name with
+                | Some str -> str
+                | None -> ParsedProgram.escapeName parsedProgram (dataType.name + "val")
+            in
+            Ok (ParsedProgram.addMnemonic parsedProgram mnemoName (Const (string objVal, dataType))) // check if "string" serialization is correct
+        | _ -> 
+            Failed "Expression is not supported"
+
+    let rec visitExpression' graph metaValues expr =
+        let valueSources, duplicates = metaValues
         let rec escapeName graph metaValues name = 
             let valueSources, duplicates = metaValues
             let containsName map = Map.containsKey name map in
@@ -76,15 +96,9 @@ module TypedParser =
                 escapeName graph metaValues (name + "'")
             else 
                 name
-        let nameExpression graph metaValues (expr: FSharpExpr) = 
-            maybe { let! _, product = visitExpression graph metaValues expr in
-                    return 
-                        match product with
-                        | Mnemonic name -> name
-                        | _ -> expr.Type.TypeDefinition.FullName }
         let bindExpressionName graph metaValues bindVar bindExpr = 
             maybe { let name = escapeName graph metaValues bindVar
-                    let! newGraph, product = visitExpression graph metaValues bindExpr in
+                    let! newGraph, product = visitExpression' graph metaValues bindExpr in
                     return 
                         match product with
                         | SourceOperation code ->
@@ -95,8 +109,8 @@ module TypedParser =
                             newGraph, (valueSources, updatedDuplicates) } in
         match expr with
         | BasicPatterns.Sequential (firstExpr, secondExpr) -> 
-            maybe { let! newGraph, firstProd = visitExpression graph metaValues firstExpr
-                    let! lastGraph, secondProd = visitExpression newGraph metaValues secondExpr in
+            maybe { let! newGraph, firstProd = visitExpression' graph metaValues firstExpr
+                    let! lastGraph, secondProd = visitExpression' newGraph metaValues secondExpr in
                     return
                         match firstProd, secondProd with
                         | SourceOperation firstOp, SourceOperation secondOp ->
@@ -113,22 +127,8 @@ module TypedParser =
                             lastGraph, secondProd }
         // TODO: ensure that operations cannot be used as arguments
         | BasicPatterns.Call (objExprOpt, memberOrFuc, typeArgs1, typeArgs2, argExprs) ->
-            maybe { let objArg = 
-                        match objExprOpt with
-                        | Some objExpr -> let! name = nameExpression graph metaValues objExprOpt in [name]
-                        | None -> []
-                    let output = escapeName graph metaValues (memberOrFuc.FullName + "Output")
-                    let ((updatedGraph, updatedMetavals),argsList) = 
-                        argExprs
-                        |> List.fold (fun ((graph, metaVals), names) x -> 
-                            maybe { let name = nameExpression graph metaVals x
-                                    let escapedName = escapeName name
-                                    let! graphAndMeta = bindExpressionName graph metaVals x in
-                                    return graphAndMeta, escapeName :: names }) ((bindExpressionName graph metaValues output), [])
-                    let a = 7
-                    
-                    return (updatedGraph, (SourceOperation 0))         
-            }
+            
+            Failed "Oops"
                     
             // Failed "Not implemented" // TODO: implement
         | BasicPatterns.Application (funExpr, typeArgs, argExprs) ->
@@ -136,9 +136,8 @@ module TypedParser =
             Failed "Not implemented" // TODO: implement
         | BasicPatterns.Let ((bindVar, bindExpr), bodyExpr) -> 
             maybe { let! newGraph, newMetavalues = bindExpressionName graph metaValues bindVar.FullName bindExpr in            
-                    return! visitExpression newGraph newMetavalues bodyExpr }
+                    return! visitExpression' newGraph newMetavalues bodyExpr }
         | BasicPatterns.Value (value) ->
-            // TODO: value may be function!
             match duplicates |> Map.tryFind value.FullName with
             | Some mnemonic ->
                 Ok (graph, Mnemonic mnemonic)

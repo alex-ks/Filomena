@@ -62,6 +62,7 @@
     <Compile Include="Mocks.fs" />
     <Compile Include="ProjectHelper.fs" />
     <None Include="Script.fsx" />
+    <Compile Include="TypedParsingModels.fs" />
     <Compile Include="TypedParser.fs" />
     <Compile Include="UntypedParser.fs" />
     <Compile Include="Program.fs" />
