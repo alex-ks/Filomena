@@ -7,43 +7,10 @@ let print x = printfn "%A" x
 
 [<EntryPoint>]
 let main args =
-    let source = """
-    module A
-    let x, y = 2, 3
-    let z, t = 5, 6
-    let seqP = 2; "atata"
-    let s:string = 7
-    let apply f x = f x
-    let loadInt (key: string) = int key
-    let myAdd x y = x + y
-    let myInc = myAdd 1
-    let print = printfn "%A"
-    let doSmt (x, y) z =
-        do print x
-        let a = 1
-        let a' = 1.5
-        print y
-        let b = 2
-        do print z
-        let c = 3
-        do myInc |> apply |> ignore
-        do (myAdd 2 2) |> myInc |> ignore
-        let d = 4 in
-        (x + y) * z
-    let doSmt' pair z = 
-        (fst pair + snd pair) * z
-    let a = loadInt "2"
-    let b = loadInt "3"
-    let res = myAdd a b
-    let pair = (2, 2)
-    let _ = doSmt pair 2
-    let _ = doSmt' pair 2
-    let _ = doSmt (1, 2) 3
-    let _ = doSmt' (1, 2) 3
-    let g = 4
-    let _ = doSmt (g, 5) 6
-    do print res
-    """
+    let source = if Array.length args > 0 then System.IO.File.ReadAllText(args.[0]) else """
+module A
+do printfn "Hello, world!"
+"""
     //printfn "%A" (UntypedParser.parseAndCheckScript source)
     let (Ok checkResult) = TypedParser.checkSingleFileNoSettings source
     let partialAssemblySign = checkResult.PartialAssemblySignature
@@ -62,7 +29,17 @@ let main args =
         |> List.map (fun x ->
             match x with 
             | MemberOrFunctionOrValue (valOrf, valOfss, expr) ->
-                do printfn "%A: %A of %A" valOrf valOfss valOrf.FullType
+                do printfn "Full name: %s, Compiled name: %s" valOrf.FullName valOrf.CompiledName
+                let rec visitExpr expr = 
+                    match expr with
+                    | BasicPatterns.Let ((bindVar, bindExpr), bodyExpr) ->
+                        do printfn "Full name: %s, Compiled name: %s" bindVar.FullName bindVar.CompiledName
+                        do visitExpr bindExpr
+                        do visitExpr bodyExpr
+                        ()
+                    | _ -> ()
+                do visitExpr expr                
+                //do printfn "%A: %A of %A" valOrf valOfss valOrf.FullType
             | _ -> 
                 do ignore ())
         |> ignore
