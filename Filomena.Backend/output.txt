@@ -1,0 +1,296 @@
+[val genName; val genName'; val y; val x; val z; val t; val seqP; val s;
+ val apply; val loadInt; val myAdd; val myInc; val someVal; val anotherInc;
+ val someF; val someF'; val print; val doSmt; val doSmt'; val a; val b; val res;
+ val pair; val g]
+[MemberOrFunctionOrValue
+   (val genName,[[val unitVar0]],Call (None,member NewGuid,[],[],[]));
+ MemberOrFunctionOrValue
+   (val genName',[],
+    Lambda (val arg00@,Call (None,val genName,[],[],[Value val arg00@])));
+ MemberOrFunctionOrValue
+   (val patternInput,[],
+    NewTuple
+  (type Microsoft.FSharp.Core.int * Microsoft.FSharp.Core.int,
+   [Const (2,type Microsoft.FSharp.Core.int);
+    Const (3,type Microsoft.FSharp.Core.int)]));
+ MemberOrFunctionOrValue
+   (val y,[],
+    TupleGet
+  (type Microsoft.FSharp.Core.int * Microsoft.FSharp.Core.int,1,
+   Call (None,val patternInput,[],[],[])));
+ MemberOrFunctionOrValue
+   (val x,[],
+    TupleGet
+  (type Microsoft.FSharp.Core.int * Microsoft.FSharp.Core.int,0,
+   Call (None,val patternInput,[],[],[])));
+ MemberOrFunctionOrValue
+   (val patternInput,[],
+    NewTuple
+  (type Microsoft.FSharp.Core.int * Microsoft.FSharp.Core.int,
+   [Const (5,type Microsoft.FSharp.Core.int);
+    Const (6,type Microsoft.FSharp.Core.int)]));
+ MemberOrFunctionOrValue
+   (val z,[],
+    TupleGet
+  (type Microsoft.FSharp.Core.int * Microsoft.FSharp.Core.int,0,
+   Call (None,val patternInput,[],[],[])));
+ MemberOrFunctionOrValue
+   (val t,[],
+    TupleGet
+  (type Microsoft.FSharp.Core.int * Microsoft.FSharp.Core.int,1,
+   Call (None,val patternInput,[],[],[])));
+ MemberOrFunctionOrValue
+   (val seqP,[],
+    Sequential
+  (Sequential
+  (Const (2,type Microsoft.FSharp.Core.int),
+   Const (null,type Microsoft.FSharp.Core.unit)),
+   Const ("atata",type Microsoft.FSharp.Core.string)));
+ MemberOrFunctionOrValue
+   (val s,[],Const ("atata",type Microsoft.FSharp.Core.string));
+ MemberOrFunctionOrValue
+   (val apply,[[val f]; [val x]],Application (Value val f,[],[Value val x]));
+ MemberOrFunctionOrValue
+   (val loadInt,[[val key]],
+    Call (None,val int,[],[type Microsoft.FSharp.Core.string],[Value val key]));
+ MemberOrFunctionOrValue
+   (val myAdd,[[val x]; [val y]],
+    Call
+  (None,val op_Addition,[],
+   [type Microsoft.FSharp.Core.int; type Microsoft.FSharp.Core.int;
+    type Microsoft.FSharp.Core.int],[Value val x; Value val y]));
+ MemberOrFunctionOrValue
+   (val myInc,[],
+    Let
+  ((val x, Const (1,type Microsoft.FSharp.Core.int)),
+   Lambda (val y,Call (None,val myAdd,[],[],[Value val x; Value val y]))));
+ MemberOrFunctionOrValue
+   (val someVal,[],
+    Call
+  (None,val apply,[],
+   [type Microsoft.FSharp.Core.int; type Microsoft.FSharp.Core.int],
+   [Call (None,val myInc,[],[],[]); Const (42,type Microsoft.FSharp.Core.int)]));
+ MemberOrFunctionOrValue
+   (val anotherInc,[[val x]],
+    Application (Call (None,val myInc,[],[],[]),[],[Value val x]));
+ MemberOrFunctionOrValue
+   (val someF,[],Lambda (val x,Call (None,val anotherInc,[],[],[Value val x])));
+ MemberOrFunctionOrValue (val someF',[],Call (None,val myInc,[],[],[]));
+ MemberOrFunctionOrValue
+   (val print,[[val x]],
+    Application
+  (Let
+  ((val clo1,
+    Call
+  (None,val printfn,[],[type 'a -> Microsoft.FSharp.Core.unit],
+   [Coerce
+  (type Microsoft.FSharp.Core.Printf.TextWriterFormat<('a -> Microsoft.FSharp.Core.unit)>,
+   NewObject
+  (member .ctor,
+   [type 'a -> Microsoft.FSharp.Core.unit; type System.IO.TextWriter;
+    type Microsoft.FSharp.Core.unit; type Microsoft.FSharp.Core.unit; type 'a],
+   [Const ("%A",type Microsoft.FSharp.Core.string)]))])),
+   Lambda (val arg10,Application (Value val clo1,[],[Value val arg10]))),
+   [],[Value val x]));
+ MemberOrFunctionOrValue
+   (val doSmt,[[val x; val y]; [val z]],
+    Let
+  ((val myAdd2,
+    Lambda
+  (val x,
+   Lambda
+  (val y,
+   Call
+  (None,val op_Addition,[],
+   [type Microsoft.FSharp.Core.int; type Microsoft.FSharp.Core.int;
+    type Microsoft.FSharp.Core.int],[Value val x; Value val y])))),
+   Let
+  ((val v,
+    Application
+  (Value val myAdd2,[],
+   [Const (2,type Microsoft.FSharp.Core.int);
+    Const (2,type Microsoft.FSharp.Core.int)])),
+   Sequential
+  (Call (None,val print,[],[type Microsoft.FSharp.Core.int],[Value val x]),
+   Let
+  ((val a, Const (1,type Microsoft.FSharp.Core.int)),
+   Let
+  ((val a', Const (1.5,type Microsoft.FSharp.Core.float)),
+   Sequential
+  (Call (None,val print,[],[type Microsoft.FSharp.Core.int],[Value val y]),
+   Let
+  ((val b, Const (2,type Microsoft.FSharp.Core.int)),
+   Sequential
+  (Call (None,val print,[],[type Microsoft.FSharp.Core.int],[Value val z]),
+   Let
+  ((val c, Const (3,type Microsoft.FSharp.Core.int)),
+   Sequential
+  (Call
+  (None,val op_PipeRight,[],
+   [type Microsoft.FSharp.Core.int -> Microsoft.FSharp.Core.int;
+    type Microsoft.FSharp.Core.unit],
+   [Call
+  (None,val op_PipeRight,[],
+   [type Microsoft.FSharp.Core.int -> Microsoft.FSharp.Core.int;
+    type Microsoft.FSharp.Core.int -> Microsoft.FSharp.Core.int],
+   [Call (None,val myInc,[],[],[]);
+    Lambda
+  (val f,
+   Lambda
+  (val x,
+   Call
+  (None,val apply,[],
+   [type Microsoft.FSharp.Core.int; type Microsoft.FSharp.Core.int],
+   [Value val f; Value val x])))]);
+    Lambda
+  (val value,
+   Call
+  (None,val ignore,[],
+   [type Microsoft.FSharp.Core.int -> Microsoft.FSharp.Core.int],
+   [Value val value]))]),
+   Sequential
+  (Call
+  (None,val op_PipeRight,[],
+   [type Microsoft.FSharp.Core.int; type Microsoft.FSharp.Core.unit],
+   [Call
+  (None,val op_PipeRight,[],
+   [type Microsoft.FSharp.Core.int; type Microsoft.FSharp.Core.int],
+   [Call
+  (None,val myAdd,[],[],
+   [Const (2,type Microsoft.FSharp.Core.int);
+    Const (2,type Microsoft.FSharp.Core.int)]);
+    Call (None,val myInc,[],[],[])]);
+    Lambda
+  (val value,
+   Call (None,val ignore,[],[type Microsoft.FSharp.Core.int],[Value val value]))]),
+   Let
+  ((val d, Const (4,type Microsoft.FSharp.Core.int)),
+   Call
+  (None,val op_Multiply,[],
+   [type Microsoft.FSharp.Core.int; type Microsoft.FSharp.Core.int;
+    type Microsoft.FSharp.Core.int],
+   [Call
+  (None,val op_Addition,[],
+   [type Microsoft.FSharp.Core.int; type Microsoft.FSharp.Core.int;
+    type Microsoft.FSharp.Core.int],[Value val x; Value val y]);
+    Value val z]))))))))))))));
+ MemberOrFunctionOrValue
+   (val doSmt',[[val pair_0; val pair_1]; [val z]],
+    Let
+  ((val pair,
+    NewTuple
+  (type Microsoft.FSharp.Core.int * Microsoft.FSharp.Core.int,
+   [Value val pair_0; Value val pair_1])),
+   Call
+  (None,val op_Multiply,[],
+   [type Microsoft.FSharp.Core.int; type Microsoft.FSharp.Core.int;
+    type Microsoft.FSharp.Core.int],
+   [Call
+  (None,val op_Addition,[],
+   [type Microsoft.FSharp.Core.int; type Microsoft.FSharp.Core.int;
+    type Microsoft.FSharp.Core.int],
+   [Call
+  (None,val fst,[],
+   [type Microsoft.FSharp.Core.int; type Microsoft.FSharp.Core.int],
+   [Value val pair]);
+    Call
+  (None,val snd,[],
+   [type Microsoft.FSharp.Core.int; type Microsoft.FSharp.Core.int],
+   [Value val pair])]);
+    Value val z])));
+ MemberOrFunctionOrValue
+   (val a,[],
+    Call (None,val loadInt,[],[],[Const ("2",type Microsoft.FSharp.Core.string)]));
+ MemberOrFunctionOrValue
+   (val b,[],
+    Call (None,val loadInt,[],[],[Const ("3",type Microsoft.FSharp.Core.string)]));
+ MemberOrFunctionOrValue
+   (val res,[],
+    Call
+  (None,val myAdd,[],[],[Call (None,val a,[],[],[]); Call (None,val b,[],[],[])]));
+ MemberOrFunctionOrValue
+   (val pair,[],
+    NewTuple
+  (type Microsoft.FSharp.Core.int * Microsoft.FSharp.Core.int,
+   [Const (2,type Microsoft.FSharp.Core.int);
+    Const (2,type Microsoft.FSharp.Core.int)]));
+ InitAction
+   Let
+  ((val z, Const (2,type Microsoft.FSharp.Core.int)),
+   Let
+  ((val x,
+    TupleGet
+  (type Microsoft.FSharp.Core.int * Microsoft.FSharp.Core.int,0,
+   Call (None,val pair,[],[],[]))),
+   Let
+  ((val y,
+    TupleGet
+  (type Microsoft.FSharp.Core.int * Microsoft.FSharp.Core.int,1,
+   Call (None,val pair,[],[],[]))),
+   Call (None,val doSmt,[],[],[Value val x; Value val y; Value val z]))));
+ InitAction
+   Let
+  ((val z, Const (2,type Microsoft.FSharp.Core.int)),
+   Let
+  ((val arg00@,
+    TupleGet
+  (type Microsoft.FSharp.Core.int * Microsoft.FSharp.Core.int,0,
+   Call (None,val pair,[],[],[]))),
+   Let
+  ((val arg01@,
+    TupleGet
+  (type Microsoft.FSharp.Core.int * Microsoft.FSharp.Core.int,1,
+   Call (None,val pair,[],[],[]))),
+   Call (None,val doSmt',[],[],[Value val arg00@; Value val arg01@; Value val z]))));
+ InitAction
+   Call
+  (None,val doSmt,[],[],
+   [Const (1,type Microsoft.FSharp.Core.int);
+    Const (2,type Microsoft.FSharp.Core.int);
+    Const (3,type Microsoft.FSharp.Core.int)]);
+ InitAction
+   Call
+  (None,val doSmt',[],[],
+   [Const (1,type Microsoft.FSharp.Core.int);
+    Const (2,type Microsoft.FSharp.Core.int);
+    Const (3,type Microsoft.FSharp.Core.int)]);
+ MemberOrFunctionOrValue (val g,[],Const (4,type Microsoft.FSharp.Core.int));
+ InitAction
+   Call
+  (None,val doSmt,[],[],
+   [Call (None,val g,[],[],[]); Const (5,type Microsoft.FSharp.Core.int);
+    Const (6,type Microsoft.FSharp.Core.int)]);
+ InitAction
+   Call
+  (None,val print,[],[type Microsoft.FSharp.Core.int],
+   [Call (None,val res,[],[],[])])]
+Full name: A.genName, Compiled name: genName
+Full name: A.genName', Compiled name: genName'
+Full name: A.patternInput, Compiled name: patternInput@4
+Full name: A.y, Compiled name: y
+Full name: A.x, Compiled name: x
+Full name: A.patternInput, Compiled name: patternInput@5-1
+Full name: A.z, Compiled name: z
+Full name: A.t, Compiled name: t
+Full name: A.seqP, Compiled name: seqP
+Full name: A.s, Compiled name: s
+Full name: A.apply, Compiled name: apply
+Full name: A.loadInt, Compiled name: loadInt
+Full name: A.myAdd, Compiled name: myAdd
+Full name: A.myInc, Compiled name: myInc
+Full name: x, Compiled name: x
+Full name: A.someVal, Compiled name: someVal
+Full name: A.anotherInc, Compiled name: anotherInc
+Full name: A.someF, Compiled name: someF
+Full name: A.someF', Compiled name: someF'
+Full name: A.print, Compiled name: print
+Full name: A.doSmt, Compiled name: doSmt
+Full name: myAdd2, Compiled name: myAdd2
+Full name: v, Compiled name: v
+Full name: A.doSmt', Compiled name: doSmt'
+Full name: pair, Compiled name: pair
+Full name: A.a, Compiled name: a
+Full name: A.b, Compiled name: b
+Full name: A.res, Compiled name: res
+Full name: A.pair, Compiled name: pair
+Full name: A.g, Compiled name: g
