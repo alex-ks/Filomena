@@ -3,7 +3,7 @@ namespace Filomena.Backend.Parsing
 open Microsoft.FSharp.Compiler.SourceCodeServices
 
 open Filomena.Backend.Models
-open Filomena.Backend.Parsing.ProjectHelper
+open ProjectHelper
 open Exceptions
 
 module TypedParser = 
@@ -68,7 +68,7 @@ module TypedParser =
         | Output of Filomena.Backend.Parsing.Operation
         | Alias of string
 
-
+    let (|Reversed|) lst = List.rev lst
 
     let uniqueName () = System.Guid.NewGuid () |> sprintf "%A"
 
@@ -77,7 +77,7 @@ module TypedParser =
     let rec visitExpression (nameOpt: string option) (parsedProgram: ParsedProgram) (expr: FSharpExpr) = 
         match expr with
         | BasicPatterns.Let ((bindVar, bindExpr), bodyExpr) ->
-            let updatedProgram, _ = visitExpression (Some bindVar.CompiledName) parsedProgram bindExpr
+            let updatedProgram = visitExpression (Some bindVar.CompiledName) parsedProgram bindExpr
             visitExpression nameOpt updatedProgram bodyExpr
 
         | BasicPatterns.Call (objExprOpt, memberOrFunc, _typeArgs1, _typeArgs2, argsExprs) ->
@@ -91,14 +91,13 @@ module TypedParser =
                         ProgramDiff.empty, value.CompiledName
                     | _ -> 
                         let argName = ParsedProgram.escapeName parsedProgram (memberOrFunc.CompiledName + (string i))
-                        let updatedProgram, _ = visitExpression (Some argName) parsedProgram argExpr in
+                        let updatedProgram = visitExpression (Some argName) parsedProgram argExpr in
                         (updatedProgram - parsedProgram), argName
-                let updatedProgram, argNames = 
+                let updatedProgram, (Reversed argNames) = 
                     argsExprs
                     |> List.mapi processArgumentExpr
                     |> List.fold (fun (program, names) (diff, mnemo) ->
                         program + diff, mnemo :: names) (parsedProgram, [])
-                    |> fun (program, names) -> program, List.rev names
                 let name = 
                     match nameOpt with 
                     | Some str -> str 
@@ -114,12 +113,12 @@ module TypedParser =
                         | MnemonicOrigin.Output operation -> 
                             operation
                         | _ -> 
-                            unexpected "There must be only outputs")
+                            unexpected "There must be only operation outputs")
                 let operation = { name = memberOrFunc.FullName;
                                   inputs = argNames;
                                   output = name;
-                                  dependencies = dependencies }
-                (ParsedProgram.addMnemonic updatedProgram name (MnemonicOrigin.Output operation)), (Output operation)
+                                  dependencies = dependencies } in
+                ParsedProgram.addMnemonic updatedProgram name (MnemonicOrigin.Output operation)
                 
         | BasicPatterns.Value value ->
             let updatedProgram = 
@@ -128,7 +127,7 @@ module TypedParser =
                     ParsedProgram.addMnemonic parsedProgram name (MnemonicOrigin.Alias value.CompiledName)
                 | None ->
                     parsedProgram
-            updatedProgram, Mnemonic value.CompiledName
+            updatedProgram
 
         | BasicPatterns.Const (objVal, fsType) ->
             let dataType = typeToModel fsType
@@ -137,7 +136,7 @@ module TypedParser =
                 | Some str -> str
                 | None -> ParsedProgram.escapeName parsedProgram (dataType.name + "val")
             let updatedProgram = ParsedProgram.addMnemonic parsedProgram name (Const (string objVal, dataType))
-            updatedProgram, Mnemonic name // check if "string" serialization is correct
+            updatedProgram // check if "string" serialization is correct
 
         | _ ->
             notSupported "Expression is not supported"
