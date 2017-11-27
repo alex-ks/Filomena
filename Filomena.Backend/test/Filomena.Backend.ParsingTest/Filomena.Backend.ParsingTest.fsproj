@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\..\packages\xunit.core.2.0.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.core.props" Condition="Exists('..\..\packages\xunit.core.2.0.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.core.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -56,6 +56,7 @@
     <Compile Include="AssemblyInfo.fs" />
     <Content Include="packages.config" />
     <Compile Include="UntypedParserTest.fs" />
+    <Compile Include="TypedParserModelsTest.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.Compiler.Service">
@@ -90,6 +91,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Filomena.Backend.Models\Filomena.Backend.Models.fsproj">
+      <Project>{e90d4254-fb49-4364-a2cc-dd8078b671e7}</Project>
+      <Name>Filomena.Backend.Models</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\src\Filomena.Backend.Parsing\Filomena.Backend.Parsing.fsproj">
       <Name>Filomena.Backend.Parsing</Name>
       <Project>{8b00c4c8-58bc-4686-b2fe-1573f5d63d59}</Project>

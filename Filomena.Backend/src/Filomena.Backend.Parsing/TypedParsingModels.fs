@@ -6,13 +6,13 @@ open Exceptions
 type Operation = { name: string;
                    inputs: string list;
                    output: string;
-                   dependencies: Operation list }
+                   dependencies: Operation Set }
 
 type MnemonicOrigin = Const of (string * DataType) | Output of Operation | Alias of string
 
 type ProgramDiff = { addedMnemonics: (string, MnemonicOrigin) Map;
                      addedNames: string Set;
-                     removedMnemonics: (string, MnemonicOrigin) Map
+                     removedMnemonics: (string, MnemonicOrigin) Map;
                      removedNames: string Set }
 
 module ProgramDiff = 
@@ -33,7 +33,7 @@ type ParsedProgram = { mnemonics: (string, MnemonicOrigin) Map;
                 | None -> true)
         let calcSetAdds setNext setPrev = 
             setNext
-            |> Set.filter (fun value -> setPrev |> Set.contains value)
+            |> Set.filter (fun value -> not (setPrev |> Set.contains value))
         { addedMnemonics = calcMapAdds next.mnemonics prev.mnemonics;
           addedNames = calcSetAdds next.usedNames prev.usedNames;
           removedMnemonics = calcMapAdds prev.mnemonics next.mnemonics; 
@@ -53,8 +53,8 @@ type ParsedProgram = { mnemonics: (string, MnemonicOrigin) Map;
 
 
 module ParsedProgram = 
-    let addMnemonic parsedProgram name origin = 
-        { mnemonics = parsedProgram.mnemonics |> Map.add name origin ;
+    let addMnemonic name origin parsedProgram = 
+        { mnemonics = parsedProgram.mnemonics |> Map.add name origin;
           usedNames = parsedProgram.usedNames |> Set.add name }
 
     let rec escapeName parsedProgram name = 

@@ -6,7 +6,7 @@ open Filomena.Backend.Models
 open ProjectHelper
 open Exceptions
 
-module TypedParser = 
+module TypedParser =
     let checker = FSharpChecker.Create(keepAssemblyContents=true)
     let defaultFileVersion = 0
     
@@ -72,13 +72,24 @@ module TypedParser =
 
     let uniqueName () = System.Guid.NewGuid () |> sprintf "%A"
 
-    let serializeConst (x: System.Object) = string x
+    let serializeConst (x: System.Object) = string x // TODO: check if "string" serialization is correct
 
-    let rec visitExpression (nameOpt: string option) (parsedProgram: ParsedProgram) (expr: FSharpExpr) = 
+    let rec visitExpression (nameOpt: string option) 
+                            predcessors
+                            (parsedProgram: ParsedProgram) 
+                            (expr: FSharpExpr) =
         match expr with
+        | BasicPatterns.Sequential (expr1, expr2) ->
+            let updatedProgram, depOpt = visitExpression None predcessors parsedProgram expr1
+            let predcessors' = 
+                match depOpt with
+                | Some op -> predcessors |> Set.add op
+                | None -> predcessors
+            visitExpression nameOpt predcessors' updatedProgram expr2
+            
         | BasicPatterns.Let ((bindVar, bindExpr), bodyExpr) ->
-            let updatedProgram = visitExpression (Some bindVar.CompiledName) parsedProgram bindExpr
-            visitExpression nameOpt updatedProgram bodyExpr
+            let updatedProgram, _ = visitExpression (Some bindVar.CompiledName) predcessors parsedProgram bindExpr
+            visitExpression nameOpt predcessors updatedProgram bodyExpr
 
         | BasicPatterns.Call (objExprOpt, memberOrFunc, _typeArgs1, _typeArgs2, argsExprs) ->
             match objExprOpt with
@@ -91,7 +102,7 @@ module TypedParser =
                         ProgramDiff.empty, value.CompiledName
                     | _ -> 
                         let argName = ParsedProgram.escapeName parsedProgram (memberOrFunc.CompiledName + (string i))
-                        let updatedProgram = visitExpression (Some argName) parsedProgram argExpr in
+                        let updatedProgram, _ = visitExpression (Some argName) predcessors parsedProgram argExpr in
                         (updatedProgram - parsedProgram), argName
                 let updatedProgram, (Reversed argNames) = 
                     argsExprs
@@ -114,20 +125,23 @@ module TypedParser =
                             operation
                         | _ -> 
                             unexpected "There must be only operation outputs")
+                    |> Set.ofList
                 let operation = { name = memberOrFunc.FullName;
                                   inputs = argNames;
                                   output = name;
-                                  dependencies = dependencies } in
-                ParsedProgram.addMnemonic updatedProgram name (MnemonicOrigin.Output operation)
+                                  dependencies = Set.union dependencies predcessors } in
+                updatedProgram 
+                |> ParsedProgram.addMnemonic name (MnemonicOrigin.Output operation), (Some operation)
                 
         | BasicPatterns.Value value ->
             let updatedProgram = 
                 match nameOpt with
                 | Some name -> 
-                    ParsedProgram.addMnemonic parsedProgram name (MnemonicOrigin.Alias value.CompiledName)
+                    parsedProgram
+                    |> ParsedProgram.addMnemonic name (MnemonicOrigin.Alias value.CompiledName)
                 | None ->
                     parsedProgram
-            updatedProgram
+            updatedProgram, None
 
         | BasicPatterns.Const (objVal, fsType) ->
             let dataType = typeToModel fsType
@@ -135,8 +149,10 @@ module TypedParser =
                 match nameOpt with
                 | Some str -> str
                 | None -> ParsedProgram.escapeName parsedProgram (dataType.name + "val")
-            let updatedProgram = ParsedProgram.addMnemonic parsedProgram name (Const (string objVal, dataType))
-            updatedProgram // check if "string" serialization is correct
+            let updatedProgram = 
+                parsedProgram
+                |> ParsedProgram.addMnemonic name (Const (serializeConst objVal, dataType))
+            updatedProgram, None
 
         | _ ->
             notSupported "Expression is not supported"
