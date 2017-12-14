@@ -2,6 +2,7 @@ module Program
 
 open Filomena.Backend.Parsing
 open Microsoft.FSharp.Compiler.SourceCodeServices
+open System
 
 let print x = printfn "%A" x
 
@@ -15,12 +16,21 @@ do printfn "Hello, world!"
     let (Ok checkResult) = TypedParser.checkSingleFileNoSettings source
     let partialAssemblySign = checkResult.PartialAssemblySignature
     let [moduleA] = partialAssemblySign.Entities |> Seq.toList
-    //let [myAddFunc] = moduleA.MembersFunctionsAndValues |> Seq.toList
-    //print myAddFunc.FullType
     
     let (Ok projCheckResult) = TypedParser.getTypedTree source 
     
     let [scriptFile] = projCheckResult.AssemblyContents.ImplementationFiles
+
+    try
+        let parsedProgram = TypedParser.parseProgramTree scriptFile
+        do print parsedProgram
+    with
+    | UnexpectedException msg
+    | NotSupportedException msg ->
+        do printfn "%s" msg
+    | :? NotImplementedException as e ->
+        do printfn "%s" e.Message
+
     match scriptFile.Declarations with
     | [FSharpImplementationFileDeclaration.Entity (entity, declList)] ->
         do print (entity.MembersFunctionsAndValues |> Seq.toList)

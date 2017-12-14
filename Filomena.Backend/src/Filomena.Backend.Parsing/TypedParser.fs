@@ -2,9 +2,9 @@ namespace Filomena.Backend.Parsing
 
 open Microsoft.FSharp.Compiler.SourceCodeServices
 
-open Filomena.Backend.Models
 open ProjectHelper
 open Exceptions
+open System.Reflection.Metadata
 
 module TypedParser =
     let checker = FSharpChecker.Create(keepAssemblyContents=true)
@@ -51,12 +51,18 @@ module TypedParser =
     
     let checkSingleFileNoSettings source = checkSingleFileFromScript (emptyProject ()) source
 
+    type DataType = Filomena.Backend.Models.DataType
+
     let rec typeToModel (t: FSharpType) =
-        let name = t.TypeDefinition.FullName
+        let name = 
+            match t.TypeDefinition.TryFullName with
+            | Some fullName -> fullName
+            | None -> t.TypeDefinition.DisplayName
+
         let parameters = 
             if t.GenericArguments.Count = 0 then None 
             else Some (t.GenericArguments |> Seq.map typeToModel |> Seq.toList) in
-        { name = name; parameters = parameters }
+        { DataType.name = name; DataType.parameters = parameters }
 
     let (|Reversed|) lst = List.rev lst
 
@@ -88,7 +94,8 @@ module TypedParser =
             | None ->
                 let processArgumentExpr i argExpr = 
                     match argExpr with
-                    | BasicPatterns.Value value -> 
+                    | BasicPatterns.Value value
+                    | BasicPatterns.Call (None, value, [], [], []) -> 
                         ProgramDiff.empty, value.CompiledName
                     | _ -> 
                         let argName = ParsedProgram.escapeName parsedProgram (memberOrFunc.CompiledName + (string i))
@@ -107,11 +114,11 @@ module TypedParser =
                     argNames
                     |> List.filter (fun name -> 
                         match updatedProgram.mnemonics.[name] with
-                        | MnemonicOrigin.Output _ -> true
+                        | Output _ -> true
                         | _ -> false)
                     |> List.map (fun name ->
                         match updatedProgram.mnemonics.[name] with
-                        | MnemonicOrigin.Output operation -> 
+                        | Output operation -> 
                             operation
                         | _ -> 
                             unexpected "There must be only operation outputs")
@@ -121,14 +128,14 @@ module TypedParser =
                                   output = name;
                                   dependencies = Set.union dependencies predcessors } in
                 updatedProgram 
-                |> ParsedProgram.addMnemonic name (MnemonicOrigin.Output operation), (Some operation)
+                |> ParsedProgram.addMnemonic name (Output operation), (Some operation)
                 
         | BasicPatterns.Value value ->
             let updatedProgram = 
                 match nameOpt with
                 | Some name -> 
                     parsedProgram
-                    |> ParsedProgram.addMnemonic name (MnemonicOrigin.Alias value.CompiledName)
+                    |> ParsedProgram.addMnemonic name (Alias value.CompiledName)
                 | None ->
                     parsedProgram
             updatedProgram, None
@@ -145,7 +152,7 @@ module TypedParser =
             updatedProgram, None
 
         | _ ->
-            notSupported "Expression is not supported"
+            "Such expression" |> notSupported
 
     let (|Function|) (x: FSharpMemberOrFunctionOrValue) = x.FullType.IsFunctionType
 
