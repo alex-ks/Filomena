@@ -46,15 +46,35 @@ module UntypedParser =
     let checker = FSharpChecker.Create ()
     
     let getUntypedTreeFromProject fileName source = 
+        let compilerParams = 
+            [| yield "--simpleresolution" 
+               yield "--noframework" 
+               yield "--debug:full" 
+               yield "--define:DEBUG" 
+               yield "--optimize-" 
+               yield "--out:" + (changeToDll fileName)
+               yield "--doc:test.xml" 
+               yield "--warn:3" 
+               yield "--fullpaths" 
+               yield "--flaterrors" 
+               yield "--target:library" 
+               yield fileName
+               let references =
+                 [ sysLib "mscorlib" 
+                   sysLib "System"
+                   sysLib "System.Core"
+                   sysLib "System.Runtime"
+                   sysLib "System.Private.CoreLib"
+                   fscorePath ]
+               for r in references do 
+                     yield "-r:" + r |]
+        let projectName = changeToFsproj fileName
+        let projOptions = checker.GetProjectOptionsFromCommandLineArgs (projectName, compilerParams)
+        let parseFileResults = checker.ParseFileInProject (fileName, source, projOptions) |> Async.RunSynchronously        
+        match parseFileResults.ParseTree with
+        | Some tree -> Ok tree
+        | None -> Failed parseFileResults.Errors
         
-        let projOptions, errors = checker.GetProjectOptionsFromScript (fileName, source) |> Async.RunSynchronously in
-        if errors.Length = 0 then    
-            let parseFileResults = checker.ParseFileInProject (fileName, source, projOptions) |> Async.RunSynchronously in
-            match parseFileResults.ParseTree with
-            | Some tree -> Ok tree
-            | None -> Failed parseFileResults.Errors
-        else
-            Failed (List.toArray errors)
         
         
     let getUntypedTree source = getUntypedTreeFromProject (projectFromScript source) source
