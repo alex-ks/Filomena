@@ -29,17 +29,9 @@ do printfn "Hello, world!"
         |> List.map (fun x ->
             match x with 
             | MemberOrFunctionOrValue (valOrf, valOfss, expr) ->
-                do printfn "Full name: %s, Compiled name: %s" valOrf.FullName valOrf.CompiledName
-                let rec visitExpr expr = 
-                    match expr with
-                    | BasicPatterns.Let ((bindVar, bindExpr), bodyExpr) ->
-                        do printfn "Full name: %s, Compiled name: %s" bindVar.FullName bindVar.CompiledName
-                        do visitExpr bindExpr
-                        do visitExpr bodyExpr
-                        ()
-                    | _ -> ()
-                do visitExpr expr                
-                //do printfn "%A: %A of %A" valOrf valOfss valOrf.FullType
+                let isFunc = valOrf.FullType.IsFunctionType
+                do printfn "Full name: %s, Compiled name: %s, is function: %b" valOrf.FullName valOrf.CompiledName isFunc
+                do printfn "Parameters: %A" valOfss
             | _ -> 
                 do ignore ())
         |> ignore

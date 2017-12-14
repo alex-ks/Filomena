@@ -149,30 +149,42 @@ module TypedParser =
 
     let (|Function|) (x: FSharpMemberOrFunctionOrValue) = x.FullType.IsFunctionType
 
-    let visitDeclarations graph declaration = 
-        match declaration with
-        | Entity (entity, subDecls) ->
-            Failed "Nested types or modules are not allowed"
-        | InitAction (expr) ->
-            // visitExpression graph expr
-            Ok ()
-        | MemberOrFunctionOrValue (funcOrVal, funcOrValss, expression) ->
-            
-            Ok ()
+    let rec visitDeclarations program predcessors declarations = 
+        match declarations with
+        | [] ->
+            program
+        | _ ->
+            let decl, tail = List.head declarations, List.tail declarations
+            match decl with
+            | Entity _ ->
+                failwith "Nested types or modules are not allowed"
+
+            | InitAction expr ->
+                let updatedProgram, depOpt = visitExpression None predcessors program expr
+                let predcessors' = 
+                    match depOpt with
+                    | Some op -> predcessors |> Set.add op
+                    | None -> predcessors
+                visitDeclarations updatedProgram predcessors' tail
+
+            | MemberOrFunctionOrValue (funcOrVal, _, expression) ->
+                if (|Function|) funcOrVal then
+                    "Functions declaration" |> notSupported
+                else
+                    let updatedProgram, _ = 
+                        visitExpression (Some funcOrVal.CompiledName) predcessors program expression
+                    visitDeclarations updatedProgram predcessors tail
             
     let (|Module|) (x: FSharpEntity) = if x.IsFSharpModule then Some x else None
     
-    let treeToComputationGraph (implFile: FSharpImplementationFileContents) =
+    let parseProgramTree (implFile: FSharpImplementationFileContents) =
         match implFile.Declarations with
         | [Entity(Module _, subdecls)] ->
-            subdecls
-            //|> List.map (ComputationGraph.empty () |> visitDeclarations)
-            |> List.map (visitDeclarations <| ComputationGraph.empty ())
-            |> List.reduce (fun accum next -> Ok ()) // TODO: implement
+            visitDeclarations ParsedProgram.empty Set.empty subdecls
         | [_] -> 
-            Failed "Top-level declaration can be module only"
+            failwith "Top-level declaration can be module only"
         | [] ->
-            Failed "Empty file"
+            failwith "Empty file"
         | _ ->
-            Failed "Too many declarations"
+            failwith "Too many declarations"
         
