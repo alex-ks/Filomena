@@ -11,45 +11,57 @@ module TypedParser =
     let defaultFileVersion = 0
     
     let getProjectOptions fileName source = 
-        let projOptions, errors = 
-            checker.GetProjectOptionsFromScript (fileName, source)
-            |> Async.RunSynchronously in
-        if errors.IsEmpty then
-            Ok projOptions
-        else
-            Failed (List.toArray errors)
+        let compilerParams = 
+            [| yield "--simpleresolution" 
+               yield "--noframework" 
+               yield "--debug:full" 
+               yield "--define:DEBUG" 
+               yield "--optimize-" 
+               yield "--out:" + (changeToDll fileName)
+               yield "--doc:test.xml" 
+               yield "--warn:3" 
+               yield "--fullpaths" 
+               yield "--flaterrors" 
+               yield "--target:library" 
+               yield fileName
+               let references =
+                 [ sysLib "mscorlib" 
+                   sysLib "System"
+                   sysLib "System.Core"
+                   sysLib "System.Runtime"
+                   sysLib "System.Private.CoreLib"
+                   fscorePath ]
+               for r in references do 
+                     yield "-r:" + r |]
+        let projectName = changeToFsproj fileName
+        checker.GetProjectOptionsFromCommandLineArgs (projectName, compilerParams)
 
     let getTypedTreeFromProject fileName source =
-        match getProjectOptions fileName source with
-        | Ok projOptions ->
-            let answer = 
-                projOptions
-                |> checker.ParseAndCheckProject
-                |> Async.RunSynchronously in
-            Ok answer
-        | Failed errors -> Failed errors
+        let projectOptions = getProjectOptions fileName source
+        projectOptions
+        |> checker.ParseAndCheckProject
+        |> Async.RunSynchronously
+        
             
     let checkSingleFileFromScript fileName source = 
-        match getProjectOptions fileName source with
-        | Ok projOptions ->
-            let _, answer = 
-                (fileName, defaultFileVersion, source, projOptions)
-                |> checker.ParseAndCheckFileInProject
-                |> Async.RunSynchronously in
-            match answer with
-            | FSharpCheckFileAnswer.Succeeded checkResults ->
-                Ok checkResults                
-            | FSharpCheckFileAnswer.Aborted ->
-                Failed [||]
-        | Failed errors -> Failed errors 
+        let projectOptions = getProjectOptions fileName source
+        let _, answer = 
+            (fileName, defaultFileVersion, source, projectOptions)
+            |> checker.ParseAndCheckFileInProject
+            |> Async.RunSynchronously in
+        match answer with
+        | FSharpCheckFileAnswer.Succeeded checkResults ->
+            checkResults                
+        | FSharpCheckFileAnswer.Aborted ->
+            failwith "File checking abourted"
     
-    let getTypedTree source = getTypedTreeFromProject (projectFromScript source) source
-
-    let getTypedTreeNoSettings source = getTypedTreeFromProject (emptyProject ()) source
+    let getProjectTypedTree source = 
+        use file = new TempFile (tempFileName (), source)
+        getTypedTreeFromProject (file.Name) source
     
-    let checkSingleFile source = checkSingleFileFromScript (projectFromScript source) source
-    
-    let checkSingleFileNoSettings source = checkSingleFileFromScript (emptyProject ()) source
+    let checkSingleFile source = 
+        use file = new TempFile (tempFileName (), source)
+        checkSingleFileFromScript (file.Name) source
 
     type DataType = Filomena.Backend.Models.DataType
 

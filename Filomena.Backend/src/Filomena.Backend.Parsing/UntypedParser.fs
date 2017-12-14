@@ -69,17 +69,17 @@ module UntypedParser =
                for r in references do 
                      yield "-r:" + r |]
         let projectName = changeToFsproj fileName
-        let projOptions = checker.GetProjectOptionsFromCommandLineArgs (projectName, compilerParams)
-        let parseFileResults = checker.ParseFileInProject (fileName, source, projOptions) |> Async.RunSynchronously        
+        let projectOptions = checker.GetProjectOptionsFromCommandLineArgs (projectName, compilerParams)
+        let parseFileResults = checker.ParseFileInProject (fileName, source, projectOptions) |> Async.RunSynchronously        
         match parseFileResults.ParseTree with
         | Some tree -> Ok tree
         | None -> Failed parseFileResults.Errors
         
-        
-        
-    let getUntypedTree source = getUntypedTreeFromProject (projectFromScript source) source
+
+    let getUntypedTree source = 
+        use file = new TempFile (tempFileName (), source)
+        getUntypedTreeFromProject (file.Name) source
     
-    let getUntypedTreeNoSettings source = getUntypedTreeFromProject (emptyProject ()) source
     
     let visitConst constRange = function 
         | SynConst.Bool _
@@ -265,7 +265,7 @@ module UntypedParser =
         |> Seq.reduce gatherReduce
 
     let parseAndCheckScript source = 
-        let maybeTree = getUntypedTreeNoSettings source in
+        let maybeTree = getUntypedTree source in
         match maybeTree with
         | Ok tree -> 
             match tree with

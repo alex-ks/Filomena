@@ -8,9 +8,8 @@ module ProjectHelper =
     let tempFileNamePrefix = "tmp"
     let sdkVersion = "2.1.2"
     let fscorePath = sprintf "/usr/local/share/dotnet/sdk/%s/FSharp/FSharp.Core.dll" sdkVersion
-
     let fscorePath' = sprintf "/usr/share/dotnet/sdk/%s/FSharp/FSharp.Core.dll" sdkVersion
-
+    
     let tempFileName () = Path.ChangeExtension (Path.GetTempFileName (), "fs")
         
     let projectFromScript source = 
@@ -37,3 +36,4 @@ module ProjectHelper =
 
     let changeToFsproj = changeExtension "fsproj"
     let changeToDll = changeExtension "dll"
+    

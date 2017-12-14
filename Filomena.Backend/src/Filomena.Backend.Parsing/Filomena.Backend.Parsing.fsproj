@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <Compile Include="Exceptions.fs" />
+    <Compile Include="TempFile.fs" />
     <Compile Include="HiddenOps.fs" />
     <Compile Include="Maybe.fs" />
     <Compile Include="Mocks.fs" />

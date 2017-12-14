@@ -13,11 +13,13 @@ module A
 do printfn "Hello, world!"
 """
     //printfn "%A" (UntypedParser.parseAndCheckScript source)
-    let (Ok checkResult) = TypedParser.checkSingleFileNoSettings source
+    do print source
+    let checkResult = TypedParser.checkSingleFile source
     let partialAssemblySign = checkResult.PartialAssemblySignature
+    
     let [moduleA] = partialAssemblySign.Entities |> Seq.toList
     
-    let (Ok projCheckResult) = TypedParser.getTypedTree source 
+    let projCheckResult = TypedParser.getProjectTypedTree source 
     
     let [scriptFile] = projCheckResult.AssemblyContents.ImplementationFiles
 
