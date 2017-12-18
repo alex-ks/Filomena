@@ -1,8 +1,12 @@
 namespace Filomena.Backend.Parsing
 
+open Microsoft.FSharp.Compiler
+
 exception NotSupportedException of string
 
 exception UnexpectedException of string
+
+exception CheckException of FSharpErrorInfo[]
 
 module Exceptions = 
     /// Raises System.NotImplementedException with message "{feature} not implemented"
@@ -16,3 +20,5 @@ module Exceptions =
 
     /// Checks condition and raises UnexpectedException if condition is false
     let expect condition failMessage = if not condition then unexpected failMessage
+
+    let checkFailed errors = raise (CheckException errors)

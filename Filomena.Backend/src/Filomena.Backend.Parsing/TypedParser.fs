@@ -4,13 +4,12 @@ open Microsoft.FSharp.Compiler.SourceCodeServices
 
 open ProjectHelper
 open Exceptions
-open System.Reflection.Metadata
 
 module TypedParser =
     let checker = FSharpChecker.Create(keepAssemblyContents=true)
     let defaultFileVersion = 0
     
-    let getProjectOptions fileName source = 
+    let getProjectOptions fileName optNames = 
         let compilerParams = 
             [| yield "--simpleresolution" 
                yield "--noframework" 
@@ -24,6 +23,7 @@ module TypedParser =
                yield "--flaterrors" 
                yield "--target:library" 
                yield fileName
+               for name in optNames -> name
                let references =
                  [ sysLib "mscorlib" 
                    sysLib "System"
@@ -31,20 +31,19 @@ module TypedParser =
                    sysLib "System.Runtime"
                    sysLib "System.Private.CoreLib"
                    fscorePath ]
-               for r in references do 
-                     yield "-r:" + r |]
+               for r in references -> "-r:" + r |]
         let projectName = changeToFsproj fileName
         checker.GetProjectOptionsFromCommandLineArgs (projectName, compilerParams)
 
-    let getTypedTreeFromProject fileName source =
-        let projectOptions = getProjectOptions fileName source
+    let getTypedTreeFromProject fileName optNames =
+        let projectOptions = getProjectOptions fileName optNames
         projectOptions
         |> checker.ParseAndCheckProject
         |> Async.RunSynchronously
         
             
     let checkSingleFileFromScript fileName source = 
-        let projectOptions = getProjectOptions fileName source
+        let projectOptions = getProjectOptions fileName []
         let _, answer = 
             (fileName, defaultFileVersion, source, projectOptions)
             |> checker.ParseAndCheckFileInProject
@@ -55,9 +54,20 @@ module TypedParser =
         | FSharpCheckFileAnswer.Aborted ->
             failwith "File checking abourted"
     
-    let getProjectTypedTree source = 
-        use file = new TempFile (tempFileName (), source)
-        getTypedTreeFromProject (file.Name) source
+    let dispose (x: System.IDisposable) = x.Dispose ()
+
+    let getProjectTypedTree fileName source optSources = 
+        let file = new TempFile (fileName, source)
+        let optFiles = 
+            optSources
+            |> Seq.map (fun code -> new TempFile(tempFileName (), code))
+            |> Seq.toList
+        use _guard = { new System.IDisposable with
+                       member __.Dispose () = for f in file::optFiles do dispose f }
+        let optNames = 
+            optFiles
+            |> Seq.map (fun f -> f.Name)
+        getTypedTreeFromProject (file.Name) optNames
     
     let checkSingleFile source = 
         use file = new TempFile (tempFileName (), source)
@@ -207,3 +217,14 @@ module TypedParser =
         | _ ->
             failwith "Too many declarations"
         
+    let parse optSources source = 
+        let targetName = tempFileName ()
+        let checkResults = getProjectTypedTree targetName source optSources
+        if checkResults.HasCriticalErrors then
+            checkFailed checkResults.Errors
+        else
+            let targetFile = 
+                checkResults.AssemblyContents.ImplementationFiles
+                |> List.filter (fun file -> file.FileName = targetName)
+                |> List.exactlyOne
+            parseProgramTree targetFile
