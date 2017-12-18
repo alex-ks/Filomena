@@ -21,9 +21,9 @@ module TypedParser =
                yield "--warn:3" 
                yield "--fullpaths" 
                yield "--flaterrors" 
-               yield "--target:library" 
-               yield fileName
+               yield "--target:library"             
                for name in optNames -> name
+               yield fileName
                let references =
                  [ sysLib "mscorlib" 
                    sysLib "System"
@@ -227,6 +227,6 @@ module TypedParser =
                 checkResults.AssemblyContents.ImplementationFiles
                 |> List.filter (fun file -> file.FileName = targetName)
                 |> List.exactlyOne
-            parseProgramTree targetFile
+            (parseProgramTree targetFile), checkResults.Errors
 
     let parseSingle = parse []

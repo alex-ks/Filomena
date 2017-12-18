@@ -8,50 +8,34 @@ let print x = printfn "%A" x
 
 [<EntryPoint>]
 let main args =
-    let source = if Array.length args > 0 then System.IO.File.ReadAllText(args.[0]) else """
+    let source = if Array.length args > 0 then
+                     System.IO.File.ReadAllText(args.[0]) 
+                 else """
 module A
-do printfn "Hello, world!"
+
+open MyModule
+
+do print "Hello, world!"
 """
-    //printfn "%A" (UntypedParser.parseAndCheckScript source)
+    let optSource = if Array.length args > 1 then
+                        System.IO.File.ReadAllText args.[1]
+                    else """
+module MyModule
+
+let print (str: string) = ignore str
+"""
+
     do print source
-    // let checkResult = TypedParser.checkSingleFile source
-    // let partialAssemblySign = checkResult.PartialAssemblySignature
-    
-    // let [moduleA] = partialAssemblySign.Entities |> Seq.toList
-    
-    // let projCheckResult = TypedParser.getProjectTypedTree (ProjectHelper.tempFileName ()) source []
-    
-    // let [scriptFile] = projCheckResult.AssemblyContents.ImplementationFiles
 
     try
-        let parsedProgram = TypedParser.parseSingle source
+        let parsedProgram, errors = TypedParser.parse [optSource] source
         do print parsedProgram
+        do print errors
     with
-    | UnexpectedException msg
-    | NotSupportedException msg ->
+    | UnexpectedException msg | NotSupportedException msg ->
         do printfn "%s" msg
+    | CheckException errors ->
+        do print errors
     | :? NotImplementedException as e ->
         do printfn "%s" e.Message
-
-    // match scriptFile.Declarations with
-    // | [FSharpImplementationFileDeclaration.Entity (entity, declList)] ->
-    //     do print (entity.MembersFunctionsAndValues |> Seq.toList)
-    //     do print (declList |> Seq.toList)
-    //     declList
-    //     |> List.map (fun x ->
-    //         match x with 
-    //         | MemberOrFunctionOrValue (valOrf, valOfss, expr) ->
-    //             let isFunc = valOrf.FullType.IsFunctionType
-    //             do printfn "Full name: %s, Compiled name: %s, is function: %b" valOrf.FullName valOrf.CompiledName isFunc
-    //             do printfn "Parameters: %A" valOfss
-    //         | _ -> 
-    //             do ignore ())
-    //     |> ignore
-    //     ()
-    // | [FSharpImplementationFileDeclaration.MemberOrFunctionOrValue (mfv, mfvll, expr)] ->
-    //     ()
-    // | [FSharpImplementationFileDeclaration.MemberOrFunctionOrValue (mfv, mfvll, expr); _] ->
-    //     ()
-    // | _ ->
-    //     ()
     0

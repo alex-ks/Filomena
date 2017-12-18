@@ -1,6 +1,10 @@
-module A
-    let a = 1 + 2
-    let b = a * 3
-    let c = a + b
-    let d = c * 2
+module MyWorkflow
 
+open Eeg
+
+let raw = loadEeg "R013"
+
+// let raw' = dropChannels ["NOSE"; "Empty1"; "Empty2"; "HEOG"] raw
+let raw' = dropChannel "NOSE" raw
+
+let filtered = filterFrequences 1 40 raw'
