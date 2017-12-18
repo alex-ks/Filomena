@@ -228,3 +228,5 @@ module TypedParser =
                 |> List.filter (fun file -> file.FileName = targetName)
                 |> List.exactlyOne
             parseProgramTree targetFile
+
+    let parseSingle = parse []
