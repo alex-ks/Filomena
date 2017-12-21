@@ -13,7 +13,7 @@ module TypedParserModelsTest =
         
         let program = { mnemonics = mnemonics;
                         usedNames = Set.ofList ["a"; "b"] }
-        let op = { name = "Calc"; inputs = ["a"; "b"]; output = "c"; dependencies = Set.empty }
+        let op = { name = "Calc"; inputs = ["a"; "b"]; output = "c"; parameters = None; dependencies = Set.empty }
         let program' = program |> ParsedProgram.addMnemonic op.output (Output op)
         
         let expectedDiff = { addedMnemonics = Map.ofList [op.output, Output op]
@@ -34,8 +34,8 @@ module TypedParserModelsTest =
         let program = { mnemonics = mnemonics;
                         usedNames = Set.ofList ["a"; "b"] }
                         
-        let op1 = { name = "Calc"; inputs = ["a"; "b"]; output = "c"; dependencies = Set.empty }
-        let op2 = { name = "Transform"; inputs = ["b"; "a"]; output = "d"; dependencies = Set.empty }
+        let op1 = { name = "Calc"; inputs = ["a"; "b"]; output = "c"; parameters = None; dependencies = Set.empty }
+        let op2 = { name = "Transform"; inputs = ["b"; "a"]; output = "d"; parameters = None; dependencies = Set.empty }
         
         let diff1 = (ParsedProgram.addMnemonic op1.output (Output op1) program) - program
         let diff2 = (ParsedProgram.addMnemonic op2.output (Output op2) program) - program

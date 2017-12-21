@@ -70,10 +70,15 @@ module UntypedParser =
                      yield "-r:" + r |]
         let projectName = changeToFsproj fileName
         let projectOptions = checker.GetProjectOptionsFromCommandLineArgs (projectName, compilerParams)
-        let parseFileResults = checker.ParseFileInProject (fileName, source, projectOptions) |> Async.RunSynchronously        
-        match parseFileResults.ParseTree with
-        | Some tree -> Ok tree
-        | None -> Failed parseFileResults.Errors
+        let parsingOptions, errors = checker.GetParsingOptionsFromProjectOptions projectOptions
+        match errors with 
+        | [] ->
+            let parseFileResults = checker.ParseFile (fileName, source, parsingOptions) |> Async.RunSynchronously  
+            match parseFileResults.ParseTree with
+            | Some tree -> Ok tree
+            | None -> Failed parseFileResults.Errors
+        | _ ->
+            Failed (List.toArray errors)
         
 
     let getUntypedTree source = 

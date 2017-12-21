@@ -1,6 +1,6 @@
 namespace Filomena.Backend.Parsing
 
-open Microsoft.FSharp.Compiler
+open Microsoft.FSharp.Compiler.SourceCodeServices
 
 exception NotSupportedException of string
 

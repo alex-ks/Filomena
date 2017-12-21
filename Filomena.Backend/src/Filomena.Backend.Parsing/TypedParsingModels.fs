@@ -3,16 +3,17 @@ namespace Filomena.Backend.Parsing
 open Filomena.Backend.Models
 open Exceptions
 
-type Operation = { name: string;
-                   inputs: string list;
-                   output: string;
+type Operation = { name: string
+                   inputs: string list
+                   output: string
+                   parameters: DataType list option
                    dependencies: Operation Set }
 
 type MnemonicOrigin = Const of (string * DataType) | Output of Operation | Alias of string
 
-type ProgramDiff = { addedMnemonics: (string, MnemonicOrigin) Map;
-                     addedNames: string Set;
-                     removedMnemonics: (string, MnemonicOrigin) Map;
+type ProgramDiff = { addedMnemonics: (string, MnemonicOrigin) Map
+                     addedNames: string Set
+                     removedMnemonics: (string, MnemonicOrigin) Map
                      removedNames: string Set }
 
 module ProgramDiff = 
@@ -21,7 +22,7 @@ module ProgramDiff =
                   removedMnemonics = Map.empty
                   removedNames = Set.empty }
 
-type ParsedProgram = { mnemonics: (string, MnemonicOrigin) Map;
+type ParsedProgram = { mnemonics: (string, MnemonicOrigin) Map
                        usedNames: string Set } with
     // TODO: test!
     static member (-) (next, prev) = 

@@ -148,6 +148,10 @@ module TypedParser =
                 let operation = { name = memberOrFunc.FullName;
                                   inputs = argNames;
                                   output = name;
+                                  parameters = 
+                                      match _typeArgs2 with
+                                      | [] -> None
+                                      | _ -> Some (_typeArgs2 |> List.map typeToModel)
                                   dependencies = Set.union dependencies predcessors } in
                 updatedProgram 
                 |> ParsedProgram.addMnemonic name (Output operation), (Some operation)

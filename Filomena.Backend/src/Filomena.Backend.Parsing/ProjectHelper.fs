@@ -3,12 +3,32 @@ namespace Filomena.Backend.Parsing
 open System
 open System.IO
 open Exceptions
+open System.Diagnostics
+open System.Text.RegularExpressions
+
+module String = 
+    let trim (str: string) = str.Trim ()
 
 module ProjectHelper = 
     let tempFileNamePrefix = "tmp"
-    let sdkVersion = "2.1.2"
-    let fscorePath = sprintf "/usr/local/share/dotnet/sdk/%s/FSharp/FSharp.Core.dll" sdkVersion
-    let fscorePath' = sprintf "/usr/share/dotnet/sdk/%s/FSharp/FSharp.Core.dll" sdkVersion
+    let sdkVersion = 
+        use dotnet = new Process (StartInfo = ProcessStartInfo(FileName = "dotnet", 
+                                                               Arguments = "--version", 
+                                                               UseShellExecute = false, 
+                                                               RedirectStandardOutput = true, 
+                                                               CreateNoWindow = true))
+        if dotnet.Start () then
+            let version = dotnet.StandardOutput.ReadToEnd () |> String.trim
+            let validVersionFormat = Regex @"[0-9]+\.[0-9]+\.[0-9]+"
+            if validVersionFormat.IsMatch version then
+                version
+            else
+                unexpected "Invalid SDK version format"
+        else 
+            unexpected "Cannot get sdk version"
+
+    let fscorePath' = sprintf "/usr/local/share/dotnet/sdk/%s/FSharp/FSharp.Core.dll" sdkVersion
+    let fscorePath = sprintf "/usr/share/dotnet/sdk/%s/FSharp/FSharp.Core.dll" sdkVersion
     
     let tempFileName () = Path.ChangeExtension (Path.GetTempFileName (), "fs")
         
