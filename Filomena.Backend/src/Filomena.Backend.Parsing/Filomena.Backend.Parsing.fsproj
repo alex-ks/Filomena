@@ -11,7 +11,6 @@
     <Compile Include="TempFile.fs" />
     <Compile Include="HiddenOps.fs" />
     <Compile Include="Maybe.fs" />
-    <Compile Include="Mocks.fs" />
     <Compile Include="ProjectHelper.fs" />
     <Compile Include="TypedParsingModels.fs" />
     <Compile Include="TypedParser.fs" />
