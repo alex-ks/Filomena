@@ -40,19 +40,6 @@ module TypedParser =
         projectOptions
         |> checker.ParseAndCheckProject
         |> Async.RunSynchronously
-        
-            
-    let checkSingleFileFromScript fileName source = 
-        let projectOptions = getProjectOptions fileName []
-        let _, answer = 
-            (fileName, defaultFileVersion, source, projectOptions)
-            |> checker.ParseAndCheckFileInProject
-            |> Async.RunSynchronously in
-        match answer with
-        | FSharpCheckFileAnswer.Succeeded checkResults ->
-            checkResults                
-        | FSharpCheckFileAnswer.Aborted ->
-            failwith "File checking abourted"
     
     let dispose (x: System.IDisposable) = x.Dispose ()
 
@@ -69,10 +56,6 @@ module TypedParser =
             |> Seq.map (fun f -> f.Name)
         getTypedTreeFromProject (file.Name) optNames
     
-    let checkSingleFile source = 
-        use file = new TempFile (tempFileName (), source)
-        checkSingleFileFromScript (file.Name) source
-
     type DataType = Filomena.Backend.Models.DataType
 
     let rec typeToModel (t: FSharpType) =
