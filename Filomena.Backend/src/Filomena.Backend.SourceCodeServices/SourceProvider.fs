@@ -1,13 +1,34 @@
 namespace Filomena.Backend.SourceCodeServices
 
+open Filomena.Backend.Orm
 open Filomena.Backend.Models
-open FSharp.Data.Sql
+open System
 
-module SourceProvider = 
-    let [<Literal>] dbVendor = Common.DatabaseProviderTypes.POSTGRESQL
-    let [<Literal>] connString = "Host=217.79.61.87;Database=filomena_db;Username=filomena;Password=F#isC00l"
-    let [<Literal>] connexStringName = "DefaultConnectionString"
-    let [<Literal>] resolutionPath = "./resolutionPath"
-    
-    type Npgsql = SqlDataProvider<Common.DatabaseProviderTypes.POSTGRESQL, connString, connexStringName, resolutionPath>
+type SourceProvider () =
+    let context = new NpgsqlContext ()
+
+    member __.AddModule (moduleName, source) =
+        do context.ModuleSources.Add (ModuleSource (Module = moduleName, Source = source)) |> ignore
+        do context.SaveChanges () |> ignore
+
+    member __.RemoveModule moduleName = 
+        let pair = ModuleSource (Module = moduleName)
+        do context.Attach pair |> ignore
+        do context.Remove pair |> ignore
+        do context.SaveChanges |> ignore
+
+    member __.UpdateModule (moduleName, source) = 
+        let pair = ModuleSource (Module = moduleName, Source = source)
+        do context.Update pair |> ignore
+        do context.SaveChanges |> ignore
+
+    interface IDisposable with member __.Dispose () = context.Dispose ()
+
+    interface IFsSourceProvider with
+        member __.GetModuleSources name = 
+            let moduleSource = query { for source in context.ModuleSources do
+                                       where (source.Module = name)
+                                       select source
+                                       exactlyOne }
+            moduleSource.Source
 
