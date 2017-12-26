@@ -1,6 +1,8 @@
 ﻿open Suave
 open Suave.Filters
 open Suave.Operators
+open Suave.Filters
+open Suave.Writers
 open Suave.Successful
 
 open Filomena.Backend.Parsing
@@ -14,8 +16,22 @@ module Program =
 
     let getBody request = request.rawForm |> System.Text.Encoding.UTF8.GetString
 
+    let setCorsHeaders =
+        setHeader  "Access-Control-Allow-Origin" "*"
+        >=> setHeader "Access-Control-Allow-Headers" "content-type"
+
+    let allowCors : WebPart =
+        choose [
+            OPTIONS >=>
+                fun context ->
+                    context |> (
+                        setCorsHeaders
+                        >=> OK "CORS approved" )
+        ]
+
     let app = 
         POST >=> path "/" >=> request (fun r ->
+            do printfn "%s" (getBody r)
             let { source = code } = JsonConvert.DeserializeObject<CompileRequest>(getBody r)
             use sourceServices = new SourceProvider ()
             match UntypedParser.parseAndCheckScript code with
@@ -34,7 +50,9 @@ module Program =
             | Failed (CheckErrors errors) -> 
                 RequestErrors.BAD_REQUEST (string errors)
             | Failed (FSharpErrors errors) ->
-                RequestErrors.BAD_REQUEST (string errors))
+                RequestErrors.BAD_REQUEST (string errors)) 
+        >=> setHeader  "Access-Control-Allow-Origin" "*"
+        >=> setHeader "Access-Control-Allow-Headers" "content-type"           
 
     let config = defaultConfig
     
