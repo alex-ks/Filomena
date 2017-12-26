@@ -2,7 +2,7 @@ namespace Filomena.Backend.ParsingTest
 
 open Xunit
 open Filomena.Backend.Parsing
-open Filomena.Backend.Parsing.UntypedParser
+open UntypedParser
 
 module UntypedParserTest =
     [<Fact>]

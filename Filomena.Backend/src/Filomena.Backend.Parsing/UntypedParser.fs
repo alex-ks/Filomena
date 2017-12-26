@@ -46,20 +46,45 @@ module UntypedParser =
     let checker = FSharpChecker.Create ()
     
     let getUntypedTreeFromProject fileName source = 
-        
-        let projOptions, errors = checker.GetProjectOptionsFromScript (fileName, source) |> Async.RunSynchronously in
-        if errors.Length = 0 then    
-            let parseFileResults = checker.ParseFileInProject (fileName, source, projOptions) |> Async.RunSynchronously in
+        let compilerParams = 
+            [| yield "--simpleresolution" 
+               yield "--noframework" 
+               yield "--debug:full" 
+               yield "--define:DEBUG" 
+               yield "--optimize-" 
+               yield "--out:" + (changeToDll fileName)
+               yield "--doc:test.xml" 
+               yield "--warn:3" 
+               yield "--fullpaths" 
+               yield "--flaterrors" 
+               yield "--target:library" 
+               yield fileName
+               let references =
+                 [ sysLib "mscorlib" 
+                   sysLib "System"
+                   sysLib "System.Core"
+                   sysLib "System.Runtime"
+                   sysLib "System.Private.CoreLib"
+                   fscorePath ]
+               for r in references do 
+                     yield "-r:" + r |]
+        let projectName = changeToFsproj fileName
+        let projectOptions = checker.GetProjectOptionsFromCommandLineArgs (projectName, compilerParams)
+        let parsingOptions, errors = checker.GetParsingOptionsFromProjectOptions projectOptions
+        match errors with 
+        | [] ->
+            let parseFileResults = checker.ParseFile (fileName, source, parsingOptions) |> Async.RunSynchronously  
             match parseFileResults.ParseTree with
             | Some tree -> Ok tree
             | None -> Failed parseFileResults.Errors
-        else
+        | _ ->
             Failed (List.toArray errors)
         
-        
-    let getUntypedTree source = getUntypedTreeFromProject (projectFromScript source) source
+
+    let getUntypedTree source = 
+        use file = new TempFile (tempFileName (), source)
+        getUntypedTreeFromProject (file.Name) source
     
-    let getUntypedTreeNoSettings source = getUntypedTreeFromProject (emptyProject ()) source
     
     let visitConst constRange = function 
         | SynConst.Bool _
@@ -245,7 +270,7 @@ module UntypedParser =
         |> Seq.reduce gatherReduce
 
     let parseAndCheckScript source = 
-        let maybeTree = getUntypedTreeNoSettings source in
+        let maybeTree = getUntypedTree source in
         match maybeTree with
         | Ok tree -> 
             match tree with

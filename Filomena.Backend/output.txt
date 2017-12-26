@@ -1,0 +1,108 @@
+{mnemonics =
+  map
+    [("a", Output {name = "Microsoft.FSharp.Core.Operators.( + )";
+                   inputs = ["op_Addition0"; "op_Addition1"];
+                   output = "a";
+                   dependencies = set [];});
+     ("b",
+      Output
+        {name = "Microsoft.FSharp.Core.Operators.( * )";
+         inputs = ["a"; "op_Multiply1"];
+         output = "b";
+         dependencies = set [{name = "Microsoft.FSharp.Core.Operators.( + )";
+                              inputs = ["op_Addition0"; "op_Addition1"];
+                              output = "a";
+                              dependencies = set [];}];});
+     ("c",
+      Output
+        {name = "Microsoft.FSharp.Core.Operators.( + )";
+         inputs = ["a"; "b"];
+         output = "c";
+         dependencies =
+          set
+            [{name = "Microsoft.FSharp.Core.Operators.( * )";
+              inputs = ["a"; "op_Multiply1"];
+              output = "b";
+              dependencies =
+               set [{name = "Microsoft.FSharp.Core.Operators.( + )";
+                     inputs = ["op_Addition0"; "op_Addition1"];
+                     output = "a";
+                     dependencies = set [];}];};
+             {name = "Microsoft.FSharp.Core.Operators.( + )";
+              inputs = ["op_Addition0"; "op_Addition1"];
+              output = "a";
+              dependencies = set [];}];});
+     ("d",
+      Output
+        {name = "Microsoft.FSharp.Core.Operators.( * )";
+         inputs = ["c"; "op_Multiply1'"];
+         output = "d";
+         dependencies =
+          set
+            [{name = "Microsoft.FSharp.Core.Operators.( + )";
+              inputs = ["a"; "b"];
+              output = "c";
+              dependencies =
+               set
+                 [{name = "Microsoft.FSharp.Core.Operators.( * )";
+                   inputs = ["a"; "op_Multiply1"];
+                   output = "b";
+                   dependencies =
+                    set [{name = "Microsoft.FSharp.Core.Operators.( + )";
+                          inputs = ["op_Addition0"; "op_Addition1"];
+                          output = "a";
+                          dependencies = set [];}];};
+                  {name = "Microsoft.FSharp.Core.Operators.( + )";
+                   inputs = ["op_Addition0"; "op_Addition1"];
+                   output = "a";
+                   dependencies = set [];}];}];});
+     ("op_Addition0", Const ("1", {name = "int";
+                                   parameters = None;}));
+     ("op_Addition1", Const ("2", {name = "int";
+                                   parameters = None;}));
+     ("op_Multiply1", Const ("3", {name = "int";
+                                   parameters = None;}));
+     ("op_Multiply1'", Const ("2", {name = "int";
+                                    parameters = None;}))];
+ usedNames =
+  set
+    ["a"; "b"; "c"; "d"; "op_Addition0"; "op_Addition1"; "op_Multiply1";
+     "op_Multiply1'"];}
+[val a; val b; val c; val d]
+[MemberOrFunctionOrValue
+   (val a,[],
+    Call
+  (None,val op_Addition,[],
+   [type Microsoft.FSharp.Core.int; type Microsoft.FSharp.Core.int;
+    type Microsoft.FSharp.Core.int],
+   [Const (1,type Microsoft.FSharp.Core.int);
+    Const (2,type Microsoft.FSharp.Core.int)]));
+ MemberOrFunctionOrValue
+   (val b,[],
+    Call
+  (None,val op_Multiply,[],
+   [type Microsoft.FSharp.Core.int; type Microsoft.FSharp.Core.int;
+    type Microsoft.FSharp.Core.int],
+   [Call (None,val a,[],[],[]); Const (3,type Microsoft.FSharp.Core.int)]));
+ MemberOrFunctionOrValue
+   (val c,[],
+    Call
+  (None,val op_Addition,[],
+   [type Microsoft.FSharp.Core.int; type Microsoft.FSharp.Core.int;
+    type Microsoft.FSharp.Core.int],
+   [Call (None,val a,[],[],[]); Call (None,val b,[],[],[])]));
+ MemberOrFunctionOrValue
+   (val d,[],
+    Call
+  (None,val op_Multiply,[],
+   [type Microsoft.FSharp.Core.int; type Microsoft.FSharp.Core.int;
+    type Microsoft.FSharp.Core.int],
+   [Call (None,val c,[],[],[]); Const (2,type Microsoft.FSharp.Core.int)]))]
+Full name: A.a, Compiled name: a, is function: false
+Parameters: []
+Full name: A.b, Compiled name: b, is function: false
+Parameters: []
+Full name: A.c, Compiled name: c, is function: false
+Parameters: []
+Full name: A.d, Compiled name: d, is function: false
+Parameters: []
