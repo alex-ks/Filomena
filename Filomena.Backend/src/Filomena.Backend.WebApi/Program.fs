@@ -1,36 +1,40 @@
-﻿// Learn more about F# at http://fsharp.org
-
-open Suave
+﻿open Suave
 open Suave.Filters
 open Suave.Operators
 open Suave.Successful
 
+open Filomena.Backend.Parsing
+open Newtonsoft.Json
+open Filomena.Backend.Parsing.UntypedParser
+open Filomena.Backend.SourceCodeServices
+open Filomena.Backend.Models
+
 module Program = 
-    let index = """
-    <html>
-        <head>
-            <title>Hello, Suave!</title>
-        </head>
-        <body>
-            <p>
-                <a href="/hello">Hello!</a>
-            </p>
-            <p>
-                <a href="/goodbye">Good bye!</a>
-            </p>
-        </body>
-    </html>
-"""
+    type CompileRequest = { source: string }    
+
+    let getBody request = request.rawForm |> System.Text.Encoding.UTF8.GetString
 
     let app = 
-        choose
-            [ GET >=> choose 
-                [ path "/" >=> OK index
-                  path "/hello" >=> OK "Hello, GET"
-                  path "/goodbye" >=> OK "Good bye, GET" ]
-              POST >=> choose
-                [ path "/hello" >=> OK "Hello POST"
-                  path "/goodbye" >=> OK "Good bye POST" ] ]
+        POST >=> path "/" >=> request (fun r ->
+            let { source = code } = JsonConvert.DeserializeObject<CompileRequest>(getBody r)
+            use sourceServices = new SourceProvider ()
+            match UntypedParser.parseAndCheckScript code with
+            | Ok modulesList ->
+                try
+                    let optSources = 
+                        modulesList
+                        |> List.map (FsSourceProvider.getModuleSources sourceServices)
+                    let program, errors = TypedParser.parse optSources code
+                    if not (Seq.exists (fun e -> e.Severity = Error) errors) then
+                        OK (string program)
+                    else
+                        RequestErrors.BAD_REQUEST (string errors)
+                with 
+                | e -> RequestErrors.BAD_REQUEST (string e)
+            | Failed (CheckErrors errors) -> 
+                RequestErrors.BAD_REQUEST (string errors)
+            | Failed (FSharpErrors errors) ->
+                RequestErrors.BAD_REQUEST (string errors))
 
     let config = defaultConfig
     

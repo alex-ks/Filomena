@@ -4,9 +4,18 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Program.fs"/>
+    <ProjectReference Include="../Filomena.Backend.Parsing/Filomena.Backend.Parsing.fsproj">
+      <Name>Filomena.Backend.Parsing.fsproj</Name>
+    </ProjectReference>
+    <ProjectReference Include="../Filomena.Backend.SourceCodeServices/Filomena.Backend.SourceCodeServices.fsproj">
+      <Name>Filomena.Backend.SourceCodeServices.fsproj</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Suave" Version="2.2.1"/>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Suave" Version="2.2.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
   </ItemGroup>
 </Project>

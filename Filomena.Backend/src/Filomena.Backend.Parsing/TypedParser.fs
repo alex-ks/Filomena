@@ -5,6 +5,17 @@ open Microsoft.FSharp.Compiler.SourceCodeServices
 open ProjectHelper
 open Exceptions
 
+type ErrorSeverity = Warning | Error
+
+type ParsingError = { ErrorNumber: int
+                      StartLine: int
+                      StartColumn: int
+                      EndLine: int
+                      EndColumn: int
+                      Severity: ErrorSeverity
+                      Subcategory: string
+                      Message: string }
+
 module TypedParser =
     let checker = FSharpChecker.Create(keepAssemblyContents=true)
     let defaultFileVersion = 0
@@ -214,6 +225,21 @@ module TypedParser =
                 checkResults.AssemblyContents.ImplementationFiles
                 |> List.filter (fun file -> file.FileName = targetName)
                 |> List.exactlyOne
-            (parseProgramTree targetFile), checkResults.Errors
+            let errors = 
+                checkResults.Errors
+                |> Seq.filter (fun e -> e.FileName = targetName)
+                |> Seq.map (fun e ->
+                    { StartLine = e.StartLineAlternate
+                      StartColumn = e.StartColumn
+                      EndLine = e.EndLineAlternate
+                      EndColumn = e.EndColumn
+                      Message = e.Message
+                      Subcategory = e.Subcategory
+                      ErrorNumber = e.ErrorNumber
+                      Severity = 
+                          match e.Severity with 
+                          | FSharpErrorSeverity.Warning -> ErrorSeverity.Warning
+                          | FSharpErrorSeverity.Error -> ErrorSeverity.Error })
+            (parseProgramTree targetFile), errors
 
     let parseSingle = parse []

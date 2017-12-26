@@ -27,8 +27,8 @@ module ProjectHelper =
         else 
             unexpected "Cannot get sdk version"
 
-    let fscorePath' = sprintf "/usr/local/share/dotnet/sdk/%s/FSharp/FSharp.Core.dll" sdkVersion
-    let fscorePath = sprintf "/usr/share/dotnet/sdk/%s/FSharp/FSharp.Core.dll" sdkVersion
+    let fscorePath = sprintf "/usr/local/share/dotnet/sdk/%s/FSharp/FSharp.Core.dll" sdkVersion
+    let fscorePath' = sprintf "/usr/share/dotnet/sdk/%s/FSharp/FSharp.Core.dll" sdkVersion
     
     let tempFileName () = Path.ChangeExtension (Path.GetTempFileName (), "fs")
         
