@@ -10,3 +10,7 @@ module HiddenOps =
     let Pow = "#Pow"
     
     let Call = "#Call"
+
+    let NewList = "#NewList"
+    let NewTuple = "#NewTuple"
+    let NewArray = "#NewArray"

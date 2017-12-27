@@ -1,7 +1,5 @@
 ﻿namespace Filomena.Backend.Models
 
-open System.Collections.Generic
-
 type DataType = { name: string; parameters: DataType list option }
 
 type Operation = { id: int; 

@@ -66,3 +66,46 @@ module ParsedProgram =
 
     let empty = { mnemonics = Map.empty;
                   usedNames = Set.empty }
+
+    let toComputationGraph parsedProgram = 
+        let operations = 
+            parsedProgram.mnemonics
+            |> Map.filter (fun _ value ->
+                match value with 
+                | Output _ -> true
+                | _ -> false)
+            |> Map.toList
+            |> List.map (fun (_, value) ->
+                match value with
+                | Output operation -> operation
+                | _ -> unexpected "Another origins must be filtered")
+        let operationIndices = 
+            operations
+            |> List.mapi (fun i op -> op, i)
+            |> Map.ofList
+        let dependencies = 
+            operations
+            |> List.map (fun op ->
+                let depsIndices = 
+                    op.dependencies
+                    |> Set.map (fun dep -> operationIndices.[dep]) in
+                depsIndices, operationIndices.[op])
+            |> List.sortBy (fun (_, i) -> i)
+            |> List.map (fun (deps, _) -> deps)
+        let mnemonics = 
+            parsedProgram.mnemonics
+            |> Map.filter (fun _ value ->
+                match value with 
+                | Const _ -> true
+                | _ -> false)
+            |> Map.map (fun _ value ->
+                match value with
+                | Const (value, t) -> { dataType = t; value = value }
+                | _ -> unexpected "Another origins must be filtered")
+        { operations = operations |> List.mapi (fun i op -> { Filomena.Backend.Models.Operation.id = i
+                                                              name = op.name
+                                                              input = op.inputs
+                                                              output = [op.output]
+                                                              parameters = op.parameters })
+          dependencies = dependencies
+          mnemonicsTable = mnemonics }            
