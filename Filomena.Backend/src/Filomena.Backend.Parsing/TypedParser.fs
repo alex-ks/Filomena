@@ -69,16 +69,22 @@ module TypedParser =
     
     type DataType = Filomena.Backend.Models.DataType
 
+    // TODO: handle measure types?
     let rec typeToModel (t: FSharpType) =
-        let name = 
-            match t.TypeDefinition.TryFullName with
-            | Some fullName -> fullName
-            | None -> t.TypeDefinition.DisplayName
-
-        let parameters = 
-            if t.GenericArguments.Count = 0 then None 
-            else Some (t.GenericArguments |> Seq.map typeToModel |> Seq.toList) in
-        { DataType.name = name; DataType.parameters = parameters }
+        if PrimitiveTypes.TypeMap |> Map.containsKey t.TypeDefinition.DisplayName then
+            PrimitiveTypes.TypeMap.[t.TypeDefinition.DisplayName]
+        else
+            let name = 
+                match t.TypeDefinition.TryFullName with
+                | Some fullName -> fullName
+                | None -> t.TypeDefinition.DisplayName
+            
+            let parameters = 
+                match t.GenericArguments |> Seq.toList with
+                | [] -> None             
+                | _ -> Some (t.GenericArguments |> Seq.map typeToModel |> Seq.toList)
+            in
+            { DataType.name = name; DataType.parameters = parameters }
 
     let (|Reversed|) lst = List.rev lst
 
@@ -100,10 +106,57 @@ module TypedParser =
                 unexpected "There must be only operation outputs")
         |> Set.ofList
 
+    let operators = Set.ofList ["+"; "-"; "*"; "/"]
+
+    let nameOperation (op: FSharpMemberOrFunctionOrValue) = 
+        match op.DisplayName.Split(' ') with
+        | [|"("; x; ")"|] -> 
+            if operators |> Set.contains x then x else op.FullName
+        | _ -> op.FullName
+
+    type Argument = Expression of FSharpExpr | Constant of string * DataType
+
+    module Argument = 
+        let ofExprs exprs = exprs |> List.map (Expression)
+        let ofInt (i: int) = Constant (string i, PrimitiveTypes.Int)
+
     let rec visitExpression (nameOpt: string option) 
                             predcessors
                             (parsedProgram: ParsedProgram) 
                             (expr: FSharpExpr) =
+        let visitCall (objExprOpt, 
+                       compiledFuncName,
+                       fullFuncName, 
+                       _typeArgs1, 
+                       typeArgs2, 
+                       argsExprs) = 
+            match objExprOpt with
+            | Some _ ->
+                "Object method calling" |> notSupported
+            | None ->
+                let processArgumentExpr = processFuncArgs parsedProgram predcessors compiledFuncName 
+                
+                let updatedProgram, (Reversed argNames) = 
+                    argsExprs
+                    |> List.mapi processArgumentExpr
+                    |> List.fold (fun (program, names) (diff, mnemo) ->
+                        program + diff, mnemo :: names) (parsedProgram, [])
+                let name = 
+                    match nameOpt with 
+                    | Some str -> str 
+                    | None -> ParsedProgram.escapeName updatedProgram (fullFuncName + "Output")
+                let dependencies = findDependencies updatedProgram argNames
+                let operation = { name = fullFuncName;
+                                  inputs = argNames;
+                                  output = name;
+                                  parameters = 
+                                      match typeArgs2 with
+                                      | [] -> None
+                                      | _ -> Some (List.map typeToModel typeArgs2)
+                                  dependencies = Set.union dependencies predcessors } in
+                updatedProgram 
+                |> ParsedProgram.addMnemonic name (Output operation), (Some operation)
+
         match expr with
         | BasicPatterns.Sequential (expr1, expr2) ->
             let updatedProgram, depOpt = visitExpression None predcessors parsedProgram expr1
@@ -117,53 +170,29 @@ module TypedParser =
             let updatedProgram, _ = visitExpression (Some bindVar.CompiledName) predcessors parsedProgram bindExpr
             visitExpression nameOpt predcessors updatedProgram bodyExpr
 
-        | BasicPatterns.NewTuple (tupleType, argsExprs) ->
-            let processArgumentExpr = processFuncArgs parsedProgram predcessors HiddenOps.NewTuple 
-            let updatedProgram, (Reversed argNames) = 
-                argsExprs
-                |> List.mapi processArgumentExpr
-                |> List.fold (fun (program, names) (diff, mnemo) ->
-                    program + diff, mnemo :: names) (parsedProgram, [])
-            let name = 
-                match nameOpt with 
-                | Some str -> str 
-                | None -> ParsedProgram.escapeName updatedProgram (HiddenOps.NewTuple + "Output")
-            let dependencies = findDependencies updatedProgram argNames
-            let operation = { name = HiddenOps.NewTuple;
-                              inputs = argNames;
-                              output = name;
-                              parameters = Some [typeToModel tupleType];
-                              dependencies = Set.union dependencies predcessors } in
-            updatedProgram 
-            |> ParsedProgram.addMnemonic name (Output operation), (Some operation)
+        | BasicPatterns.TupleGet (tupleType, index, tupleExpr) ->
+            visitCall (None,
+                       HiddenOps.TupleGet,
+                       HiddenOps.TupleGet,
+                       [],
+                       Seq.toList tupleType.GenericArguments,
+                       [Argument.ofInt index; Expression tupleExpr])
 
-        | BasicPatterns.Call (objExprOpt, memberOrFunc, _typeArgs1, _typeArgs2, argsExprs) ->
-            match objExprOpt with
-            | Some _ ->
-                "Object method calling" |> notSupported
-            | None ->
-                let processArgumentExpr = processFuncArgs parsedProgram predcessors memberOrFunc.CompiledName 
-                
-                let updatedProgram, (Reversed argNames) = 
-                    argsExprs
-                    |> List.mapi processArgumentExpr
-                    |> List.fold (fun (program, names) (diff, mnemo) ->
-                        program + diff, mnemo :: names) (parsedProgram, [])
-                let name = 
-                    match nameOpt with 
-                    | Some str -> str 
-                    | None -> ParsedProgram.escapeName updatedProgram (memberOrFunc.FullName + "Output")
-                let dependencies = findDependencies updatedProgram argNames
-                let operation = { name = memberOrFunc.FullName;
-                                  inputs = argNames;
-                                  output = name;
-                                  parameters = 
-                                      match _typeArgs2 with
-                                      | [] -> None
-                                      | _ -> Some (_typeArgs2 |> List.map typeToModel)
-                                  dependencies = Set.union dependencies predcessors } in
-                updatedProgram 
-                |> ParsedProgram.addMnemonic name (Output operation), (Some operation)
+        | BasicPatterns.NewTuple (tupleType, argsExprs) ->
+            visitCall (None,
+                       HiddenOps.NewTuple,
+                       HiddenOps.NewTuple,
+                       [],
+                       Seq.toList tupleType.GenericArguments,
+                       Argument.ofExprs argsExprs)
+
+        | BasicPatterns.Call (objExprOpt, memberOrFunc, typeArgs1, typeArgs2, argsExprs) ->
+            visitCall (objExprOpt, 
+                       memberOrFunc.CompiledName, 
+                       nameOperation memberOrFunc, 
+                       typeArgs1, 
+                       typeArgs2, 
+                       Argument.ofExprs argsExprs)
                 
         | BasicPatterns.Value value ->
             let updatedProgram = 
@@ -187,16 +216,23 @@ module TypedParser =
             updatedProgram, None
 
         | _ ->
+            printfn "%A" expr
             "Such expression" |> notSupported
-    and processFuncArgs parsedProgram predcessors funcName i argExpr = 
-        match argExpr with
-        | BasicPatterns.Value value
-        | BasicPatterns.Call (None, value, [], [], []) -> 
-            ProgramDiff.empty, value.CompiledName
-        | _ -> 
+    and processFuncArgs parsedProgram predcessors funcName i arg = 
+        match arg with
+        | Expression argExpr ->
+            match argExpr with
+            | BasicPatterns.Value value
+            | BasicPatterns.Call (None, value, [], [], []) -> 
+                ProgramDiff.empty, value.CompiledName
+            | _ -> 
+                let argName = ParsedProgram.escapeName parsedProgram (funcName + (string i))
+                let updatedProgram, _ = visitExpression (Some argName) predcessors parsedProgram argExpr in
+                (updatedProgram - parsedProgram), argName
+        | Constant (value, t) ->
             let argName = ParsedProgram.escapeName parsedProgram (funcName + (string i))
-            let updatedProgram, _ = visitExpression (Some argName) predcessors parsedProgram argExpr in
-            (updatedProgram - parsedProgram), argName        
+            let updatedProgram = ParsedProgram.addMnemonic argName (Const (value, t)) parsedProgram
+            (updatedProgram - parsedProgram), argName
 
     let (|Function|) (x: FSharpMemberOrFunctionOrValue) = x.FullType.IsFunctionType
 

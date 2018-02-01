@@ -11,6 +11,8 @@ open Filomena.Backend.Parsing.UntypedParser
 open Filomena.Backend.SourceCodeServices
 open Filomena.Backend.Models
 
+open Filomena.Backend.WebApi
+
 module Program = 
     type CompileRequest = { source: string }    
 
@@ -42,7 +44,7 @@ module Program =
                         |> List.map (FsSourceProvider.getModuleSources sourceServices)
                     let program, errors = TypedParser.parse optSources code
                     if not (Seq.exists (fun e -> e.Severity = Error) errors) then
-                        OK (string program)
+                        OK (JsonConvert.SerializeObject(program, Formatting.Indented, OptionConverter ()))
                     else
                         RequestErrors.BAD_REQUEST (string errors)
                 with 
@@ -52,7 +54,7 @@ module Program =
             | Failed (FSharpErrors errors) ->
                 RequestErrors.BAD_REQUEST (string errors)) 
         >=> setHeader  "Access-Control-Allow-Origin" "*"
-        >=> setHeader "Access-Control-Allow-Headers" "content-type"           
+        >=> setHeader "Access-Control-Allow-Headers" "content-type"
 
     let config = defaultConfig
     

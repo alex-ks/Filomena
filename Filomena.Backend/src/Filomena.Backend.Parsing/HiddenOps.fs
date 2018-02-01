@@ -2,10 +2,10 @@ namespace Filomena.Backend.Parsing
 
 [<RequireQualifiedAccess>]
 module HiddenOps = 
-    let Add = "#Add"
-    let Sub = "#Sub"
-    let Mul = "#Mul"
-    let Div = "#Div"
+    let Add = "+"
+    let Sub = "-"
+    let Mul = "*"
+    let Div = "/"
     let Mod = "#Mod"
     let Pow = "#Pow"
     
@@ -14,3 +14,5 @@ module HiddenOps =
     let NewList = "#NewList"
     let NewTuple = "#NewTuple"
     let NewArray = "#NewArray"
+
+    let TupleGet = "#TupleGet"

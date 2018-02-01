@@ -10,6 +10,7 @@
     <Compile Include="Exceptions.fs" />
     <Compile Include="TempFile.fs" />
     <Compile Include="HiddenOps.fs" />
+    <Compile Include="PrimitiveTypes.fs" />
     <Compile Include="Maybe.fs" />
     <Compile Include="ProjectHelper.fs" />
     <Compile Include="TypedParsingModels.fs" />
