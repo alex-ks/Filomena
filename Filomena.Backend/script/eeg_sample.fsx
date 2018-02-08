@@ -1,5 +1,7 @@
 module MyWorkflow
 
+#load "eeg_decl.fsx"
+
 open Eeg
 
 let raw = loadEeg "R013"
