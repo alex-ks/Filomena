@@ -9,7 +9,7 @@ type Operation = { name: string
                    parameters: DataType list option
                    dependencies: Operation Set }
 
-type MnemonicOrigin = Const of (string * DataType) | Output of Operation | Alias of string
+type MnemonicOrigin = Const of (string * DataType) | Output of Operation
 
 type ProgramDiff = { addedMnemonics: (string, MnemonicOrigin) Map
                      addedNames: string Set

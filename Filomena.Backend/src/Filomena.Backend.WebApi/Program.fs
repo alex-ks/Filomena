@@ -48,6 +48,7 @@ module Program =
                     else
                         RequestErrors.BAD_REQUEST (string errors)
                 with 
+                | CheckException errors -> RequestErrors.BAD_REQUEST (string errors)
                 | e -> RequestErrors.BAD_REQUEST (string e)
             | Failed (CheckErrors errors) -> 
                 RequestErrors.BAD_REQUEST (string errors)

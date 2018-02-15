@@ -16,3 +16,5 @@ module HiddenOps =
     let NewArray = "#NewArray"
 
     let TupleGet = "#TupleGet"
+
+    let Identity = "#Identity"

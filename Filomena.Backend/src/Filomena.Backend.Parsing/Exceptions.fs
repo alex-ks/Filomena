@@ -2,11 +2,39 @@ namespace Filomena.Backend.Parsing
 
 open Microsoft.FSharp.Compiler.SourceCodeServices
 
+type ErrorSeverity = Warning | Error
+
+type ParsingError = { ErrorNumber: int
+                      StartLine: int
+                      StartColumn: int
+                      EndLine: int
+                      EndColumn: int
+                      Severity: ErrorSeverity
+                      Subcategory: string
+                      Message: string }
+
+module ParsingError = 
+    let ofFSharpErrorInfo (e: FSharpErrorInfo) = 
+        { StartLine = e.StartLineAlternate
+          StartColumn = e.StartColumn
+          EndLine = e.EndLineAlternate
+          EndColumn = e.EndColumn
+          Message = e.Message
+          Subcategory = e.Subcategory
+          ErrorNumber = e.ErrorNumber
+          Severity = 
+              match e.Severity with 
+              | FSharpErrorSeverity.Warning -> ErrorSeverity.Warning
+              | FSharpErrorSeverity.Error -> ErrorSeverity.Error }
+
+    let ofFSharpErrorInfos (es: FSharpErrorInfo seq) = 
+        Seq.map ofFSharpErrorInfo es
+
 exception NotSupportedException of string
 
 exception UnexpectedException of string
 
-exception CheckException of FSharpErrorInfo[]
+exception CheckException of ParsingError list
 
 module Exceptions = 
     /// Raises System.NotImplementedException with message "{feature} not implemented"

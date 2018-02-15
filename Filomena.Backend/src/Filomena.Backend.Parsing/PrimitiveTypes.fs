@@ -12,4 +12,4 @@ module PrimitiveTypes =
     let TypeMap = Map.ofList [ "int", Int;
                                 "float", Float;
                                 "string", String;
-                                "Bool", Bool ]
+                                "bool", Bool ]

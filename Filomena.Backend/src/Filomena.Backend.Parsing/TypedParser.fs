@@ -4,17 +4,7 @@ open Microsoft.FSharp.Compiler.SourceCodeServices
 
 open ProjectHelper
 open Exceptions
-
-type ErrorSeverity = Warning | Error
-
-type ParsingError = { ErrorNumber: int
-                      StartLine: int
-                      StartColumn: int
-                      EndLine: int
-                      EndColumn: int
-                      Severity: ErrorSeverity
-                      Subcategory: string
-                      Message: string }
+open System.Reflection.Metadata
 
 module TypedParser =
     let checker = FSharpChecker.Create(keepAssemblyContents=true)
@@ -198,8 +188,18 @@ module TypedParser =
             let updatedProgram = 
                 match nameOpt with
                 | Some name -> 
+                    let dependencies = 
+                        match parsedProgram.mnemonics.[value.CompiledName] with
+                        | Const _ -> []
+                        | Output op -> [op]
+                        |> Set.ofList
+                    let copyOp = { name = HiddenOps.Identity
+                                   inputs = [value.CompiledName]
+                                   output = name
+                                   parameters = Some [typeToModel value.FullType]
+                                   dependencies = dependencies }
                     parsedProgram
-                    |> ParsedProgram.addMnemonic name (Alias value.CompiledName)
+                    |> ParsedProgram.addMnemonic name (Output copyOp)
                 | None ->
                     parsedProgram
             updatedProgram, None
@@ -279,27 +279,16 @@ module TypedParser =
         let targetName = tempFileName ()
         let checkResults = getProjectTypedTree targetName source optSources
         if checkResults.HasCriticalErrors then
-            checkFailed checkResults.Errors
+            checkResults.Errors 
+            |> ParsingError.ofFSharpErrorInfos 
+            |> Seq.toList
+            |> checkFailed 
         else
             let targetFile = 
                 checkResults.AssemblyContents.ImplementationFiles
                 |> List.filter (fun file -> file.FileName = targetName)
                 |> List.exactlyOne
-            let errors = 
-                checkResults.Errors
-                |> Seq.filter (fun e -> e.FileName = targetName)
-                |> Seq.map (fun e ->
-                    { StartLine = e.StartLineAlternate
-                      StartColumn = e.StartColumn
-                      EndLine = e.EndLineAlternate
-                      EndColumn = e.EndColumn
-                      Message = e.Message
-                      Subcategory = e.Subcategory
-                      ErrorNumber = e.ErrorNumber
-                      Severity = 
-                          match e.Severity with 
-                          | FSharpErrorSeverity.Warning -> ErrorSeverity.Warning
-                          | FSharpErrorSeverity.Error -> ErrorSeverity.Error })
+            let errors = ParsingError.ofFSharpErrorInfos checkResults.Errors
             let graph = 
                 parseProgramTree targetFile
                 |> ParsedProgram.toComputationGraph
