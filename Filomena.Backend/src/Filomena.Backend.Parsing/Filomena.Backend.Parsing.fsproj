@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="ParsingResources.fs" />
     <Compile Include="Exceptions.fs" />
     <Compile Include="TempFile.fs" />
     <Compile Include="HiddenOps.fs" />

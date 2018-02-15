@@ -55,17 +55,31 @@ module UntypedParserTest =
             
     [<Fact>]
     let ``Script parsing failed because of nested modules`` () =
-        // TODO: implement
-        Assert.False true
-        
-    [<Fact>]
-    let ``Script parsing failed because of multiple modules`` () = 
-        // TODO: implement
-        Assert.False true
+        let source = """
+            module A
+            
+            module B = 
+                let str = "Hello, world!"
+        """
+        let parseResults = parseAndCheckScript source in
+        match parseResults with
+        | Failed (CheckErrors [CheckError (msg, _)]) ->
+            Assert.Equal (expected = ParsingResources.nestedModulesNotAllowedMsg, actual = msg)
+        | _ ->
+            Assert.True (false, "Submodule error must be returned")
         
     [<Fact>]
     let ``Script parsing failed because of namespace declaration`` () = 
-        // TODO: implement
-        Assert.False true
+        let source = """
+            namespace A
+            
+            let str = "Hello, world!"
+        """
+        let parseResults = parseAndCheckScript source in
+        match parseResults with
+        | Failed (CheckErrors [CheckError (msg, _)]) ->
+            Assert.Equal (expected = ParsingResources.namespaceIsNotAllowed, actual = msg)
+        | _ ->
+            Assert.True (false, "Namespace error must be returned")
         
         
