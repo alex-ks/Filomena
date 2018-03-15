@@ -226,7 +226,7 @@ module TypedParser =
             | BasicPatterns.Call (None, value, [], [], []) -> 
                 ProgramDiff.empty, value.CompiledName
             | _ -> 
-                let argName = ParsedProgram.escapeName parsedProgram (funcName + (string i))
+                let argName = ParsedProgram.escapeName parsedProgram ("@" + funcName + (string i))
                 let updatedProgram, _ = visitExpression (Some argName) predcessors parsedProgram argExpr in
                 (updatedProgram - parsedProgram), argName
         | Constant (value, t) ->

@@ -27,11 +27,15 @@ module ProjectHelper =
         else 
             unexpected "Cannot get sdk version"
 
-    // mac
-    let fscorePath = sprintf "/usr/local/share/dotnet/sdk/%s/FSharp/FSharp.Core.dll" sdkVersion
-    // linux
-    let fscorePath' = sprintf "/usr/share/dotnet/sdk/%s/FSharp/FSharp.Core.dll" sdkVersion
-    
+    let fscorePath = 
+        match Environment.OSVersion.Platform, Environment.OSVersion.Version.Major with
+        | PlatformID.Unix, 4 -> // Linux
+            sprintf "/usr/share/dotnet/sdk/%s/FSharp/FSharp.Core.dll" sdkVersion
+        | PlatformID.Unix, _ -> // MacOS
+            sprintf "/usr/local/share/dotnet/sdk/%s/FSharp/FSharp.Core.dll" sdkVersion
+        | _ ->
+            unexpected "OS is currently unsupported"
+
     let tempFileName () = Path.ChangeExtension (Path.GetTempFileName (), "fs")
         
     let projectFromScript source = 
