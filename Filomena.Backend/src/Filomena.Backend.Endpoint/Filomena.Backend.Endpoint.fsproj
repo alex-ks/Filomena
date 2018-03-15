@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="OptionConverter.fs" />
+    <Compile Include="App.fs" />
+    <Compile Include="Startup.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Giraffe" Version="1.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Filomena.Backend.Parsing/Filomena.Backend.Parsing.fsproj">
+      <Name>Filomena.Backend.Parsing.fsproj</Name>
+    </ProjectReference>
+    <ProjectReference Include="../Filomena.Backend.SourceCodeServices/Filomena.Backend.SourceCodeServices.fsproj">
+      <Name>Filomena.Backend.SourceCodeServices.fsproj</Name>
+    </ProjectReference>
+  </ItemGroup>
+
+</Project>

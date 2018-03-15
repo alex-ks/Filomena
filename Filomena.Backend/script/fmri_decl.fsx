@@ -41,10 +41,13 @@ type NormalComponent = { mean: float; std: float; weight: float }
 let fitNormal termCount (data: (float * int) list) = 
     ignore data
     [ for _ in 0..termCount -> { mean = 0.; std = 1.; weight = 1. } ]
-    [ for _ in 0..termCount -> 0, 0, 0 ]
+    // [ for _ in 0..termCount -> 0., 0., 0. ]
 
 module List = 
     let std (_: float list) = 3.14
+
+    let mapSecond<'a, 'b, 't> (mapping: 'b -> 't) (lst: ('a * 'b) list) = 
+        List.map (fun (a, b) -> a, mapping b) lst
 
 module Map = 
     let keys m = 
