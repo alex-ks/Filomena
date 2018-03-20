@@ -15,9 +15,11 @@ module Program =
     let exitCode = 0
 
     let BuildWebHost args =
+        let hostingConf = ConfigurationBuilder().AddJsonFile("hosting.json").Build()
         WebHost
             .CreateDefaultBuilder(args)
             .UseStartup<Startup>()
+            .UseUrls(hostingConf.["server.url"])
             .Build()
 
     [<EntryPoint>]

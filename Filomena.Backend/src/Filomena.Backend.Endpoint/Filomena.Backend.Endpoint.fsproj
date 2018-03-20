@@ -17,6 +17,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Update="hosting.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../Filomena.Backend.Parsing/Filomena.Backend.Parsing.fsproj">
       <Name>Filomena.Backend.Parsing.fsproj</Name>
     </ProjectReference>
