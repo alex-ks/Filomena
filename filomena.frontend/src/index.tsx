@@ -3,4 +3,4 @@ import * as ReactDOM from "react-dom"
 
 import { App } from "./components/App"
 
-ReactDOM.render(<App compilerUrl="http://localhost:5000"/>, document.getElementById("root"));
+ReactDOM.render(<App compilerUrl="http://ecclesia.ict.nsc.ru:27944"/>, document.getElementById("root"));
