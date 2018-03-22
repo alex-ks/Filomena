@@ -12,20 +12,23 @@ module String =
 module ProjectHelper = 
     let tempFileNamePrefix = "tmp"
     let sdkVersion = 
-        use dotnet = new Process (StartInfo = ProcessStartInfo(FileName = "dotnet", 
-                                                               Arguments = "--version", 
-                                                               UseShellExecute = false, 
-                                                               RedirectStandardOutput = true, 
-                                                               CreateNoWindow = true))
-        if dotnet.Start () then
-            let version = dotnet.StandardOutput.ReadToEnd () |> String.trim
-            let validVersionFormat = Regex @"[0-9]+\.[0-9]+\.[0-9]+"
-            if validVersionFormat.IsMatch version then
-                version
-            else
-                unexpected "Invalid SDK version format"
-        else 
-            unexpected "Cannot get sdk version"
+        let version = 
+            if not (File.Exists "version.txt") then 
+                use dotnet = new Process (StartInfo = ProcessStartInfo(FileName = "dotnet", 
+                                                                       Arguments = "--version", 
+                                                                       UseShellExecute = false, 
+                                                                       RedirectStandardOutput = true, 
+                                                                       CreateNoWindow = true))
+                if not (dotnet.Start () && ((do dotnet.WaitForExit ()); dotnet.ExitCode <> 0)) then
+                    do failwith "Unable to get SDK version"                
+            File.ReadAllText "version.txt" 
+            |> String.trim
+        let validVersionFormat = Regex @"[0-9]+\.[0-9]+\.[0-9]+"
+        if validVersionFormat.IsMatch version then
+            version
+        else
+            failwith "Invalid SDK version format"
+        
 
     let fscorePath = 
         match Environment.OSVersion.Platform, Environment.OSVersion.Version.Major with
