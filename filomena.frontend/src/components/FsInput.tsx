@@ -1,6 +1,8 @@
 import * as React from "react"
 import * as Bootstrap from "reactstrap"
 
+import "src/style.css"
+
 interface IFsInputProps 
 { 
     onInput(sourceCode: string): void;
@@ -38,32 +40,25 @@ export class FsInput extends React.Component<IFsInputProps, IFsInputState>
     {
         return (
                 <Bootstrap.Form>
-                    <div className="row">
-                        <div className="col-md-3"></div>
-                        <div className="col-md-6">
-                            <Bootstrap.FormGroup>
-                                <Bootstrap.Label 
-                                    for="source"
-                                    style=
-                                    {{ 
-                                        margin: "1em 0em",
-                                        fontWeight: "bold"
-                                    }}>Enter your source code:</Bootstrap.Label>
-                                <Bootstrap.Input 
-                                    type="textarea" 
-                                    id="source"
-                                    style=
-                                    {{ 
-                                        height: "15em" ,
-                                        fontFamily: "monospace"
-                                    }}
-                                    value={this.state.source}
-                                    onChange={this.handleChange} />
-                                <Bootstrap.Button 
-                                    style={{ margin: "1em 0em" }}
-                                    onClick={this.handleCompile}>Compile</Bootstrap.Button>
-                            </Bootstrap.FormGroup>
-                        </div>
+                    <div>
+                        <Bootstrap.FormGroup>
+                            <Bootstrap.Label 
+                                for="source"
+                                className="codeLabel">
+                                Enter your source code:
+                            </Bootstrap.Label>
+                            <Bootstrap.Input 
+                                type="textarea" 
+                                id="source"
+                                className="codeBox"
+                                value={this.state.source}
+                                onChange={this.handleChange} />
+                            <Bootstrap.Button 
+                                className="submitButton"
+                                onClick={this.handleCompile}>
+                                Compile
+                            </Bootstrap.Button>
+                        </Bootstrap.FormGroup>
                     </div>
                 </Bootstrap.Form>
         );

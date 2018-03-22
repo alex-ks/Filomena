@@ -1,6 +1,8 @@
 import * as React from "react"
 import * as Bootstrap from "reactstrap"
 
+import "src/style.css"
+
 interface IResultBoxProps
 {
     result: string;
@@ -17,28 +19,19 @@ export class ResultBox extends React.Component<IResultBoxProps>
     {
         return (
             <Bootstrap.Form>
-                    <div className="row">
-                        <div className="col-md-3"></div>
-                        <div className="col-md-6">
-                            <Bootstrap.FormGroup>
-                                <Bootstrap.Label 
-                                    for="result"
-                                    style=
-                                    {{ 
-                                        margin: "1em 0em",
-                                        fontWeight: "bold"
-                                    }}>Compiled code:</Bootstrap.Label>
-                                <Bootstrap.Input 
-                                    type="textarea" 
-                                    id="result"
-                                    style=
-                                    {{ 
-                                        height: "15em" ,
-                                        fontFamily: "monospace"
-                                    }}
-                                    value={this.props.result} />
-                            </Bootstrap.FormGroup>
-                        </div>
+                    <div>
+                        <Bootstrap.FormGroup>
+                            <Bootstrap.Label 
+                                for="result"
+                                className="codeLabel">
+                                Compiled code:
+                            </Bootstrap.Label>
+                            <Bootstrap.Input 
+                                type="textarea" 
+                                id="result"
+                                className="codeBox"
+                                value={this.props.result} />
+                        </Bootstrap.FormGroup>
                     </div>
                 </Bootstrap.Form>
         );

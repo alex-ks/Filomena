@@ -1,0 +1,19 @@
+.codeLabel
+{
+    margin: 1em 0em;
+    font-weight: bold;
+}
+
+.codeBox
+{
+    width: "100%";
+    height: 40em;
+    font-family: monospace;
+}
+
+.submitButton
+{
+    margin: 1em 0em;
+}
+
+
