@@ -19,10 +19,14 @@ module ProjectHelper =
                                                                        UseShellExecute = false, 
                                                                        RedirectStandardOutput = true, 
                                                                        CreateNoWindow = true))
-                if not (dotnet.Start () && ((do dotnet.WaitForExit ()); dotnet.ExitCode <> 0)) then
-                    do failwith "Unable to get SDK version"                
-            File.ReadAllText "version.txt" 
-            |> String.trim
+                if dotnet.Start () && ((do dotnet.WaitForExit ()); dotnet.ExitCode = 0) then
+                    let version = dotnet.StandardOutput.ReadToEnd () |> String.trim
+                    do File.WriteAllText ("version.txt", version)
+                    version
+                else
+                    failwith "Unable to get SDK version"
+            else                              
+                File.ReadAllText "version.txt" |> String.trim
         let validVersionFormat = Regex @"[0-9]+\.[0-9]+\.[0-9]+"
         if validVersionFormat.IsMatch version then
             version
