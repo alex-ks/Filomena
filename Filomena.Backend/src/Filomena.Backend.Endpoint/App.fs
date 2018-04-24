@@ -7,10 +7,13 @@ open Microsoft.AspNetCore.Builder
 
 open Filomena.Backend.Parsing
 open Filomena.Backend.Parsing.UntypedParser
+open Filomena.Backend.Parsing.PartialParser
 open Filomena.Backend.SourceCodeServices
 open Filomena.Backend.Models
 
-type CompileRequest = { source: string }    
+type CompileRequest = { source: string } 
+
+type PartialResponse = { name: string; opens: string list }  
 
 let compile { source = code } = 
     use sourceServices = new SourceProvider ()
@@ -32,13 +35,21 @@ let compile { source = code } =
     | Failed (CheckErrors errors) -> 
         RequestErrors.BAD_REQUEST (string errors)
     | Failed (FSharpErrors errors) ->
-        RequestErrors.BAD_REQUEST (string errors) 
+        RequestErrors.BAD_REQUEST (string errors)
 
+let partialCheck { source = code } =
+    try
+        let name, opens = partialParse code
+        json { name = name; opens = opens }
+    with
+    | CheckException errors -> RequestErrors.BAD_REQUEST (string errors)
+    | e -> RequestErrors.BAD_REQUEST (string e)
 
 let webApp = 
-    choose [ POST 
-             >=> route "/" 
-             >=> bindModel<CompileRequest> None compile ]
+    choose [ POST
+             >=> choose [ route "/" >=> bindModel<CompileRequest> None compile
+                          route "/partial" >=> bindModel<CompileRequest> None partialCheck ] ]
+           
 
 let configureApp (app : IApplicationBuilder) =
     // Add Giraffe to the ASP.NET Core pipeline
