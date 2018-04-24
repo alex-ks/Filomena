@@ -19,7 +19,7 @@ module PartialParserTest =
     let ``Successfull parsing test with module definition and script errors`` () = 
         let source = """
             module A
-            do printfn 
+            2 <- let
         """
         let name, opens = partialParse source in
         do Assert.Empty opens
@@ -30,7 +30,7 @@ module PartialParserTest =
         let source = """
             module A
             open B
-            do printfn 
+            2 <- let
         """
         let name, opens = partialParse source in
         let openName = Assert.Single opens
