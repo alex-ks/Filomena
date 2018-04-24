@@ -23,12 +23,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Filomena.Backend.Parsing/Filomena.Backend.Parsing.fsproj">
-      <Name>Filomena.Backend.Parsing.fsproj</Name>
-    </ProjectReference>
-    <ProjectReference Include="../Filomena.Backend.SourceCodeServices/Filomena.Backend.SourceCodeServices.fsproj">
-      <Name>Filomena.Backend.SourceCodeServices.fsproj</Name>
-    </ProjectReference>
+    <ProjectReference Include="../Filomena.Backend.Parsing/Filomena.Backend.Parsing.fsproj" />
+    <ProjectReference Include="../Filomena.Backend.SourceCodeServices/Filomena.Backend.SourceCodeServices.fsproj" />
   </ItemGroup>
 
 </Project>

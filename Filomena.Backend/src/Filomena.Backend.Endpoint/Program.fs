@@ -15,7 +15,7 @@ module Program =
     let exitCode = 0
 
     let BuildWebHost args =
-        let hostingConf = ConfigurationBuilder().AddJsonFile("hosting.json").Build()
+        let hostingConf = ConfigurationBuilder().AddJsonFile("hosting.json").Build() in
         WebHost
             .CreateDefaultBuilder(args)
             .UseStartup<Startup>()

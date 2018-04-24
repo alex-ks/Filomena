@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="UntypedParserTest.fs" />
     <Compile Include="TypedParserModelsTest.fs" />
+    <Compile Include="PartialParserTest.fs" />
   </ItemGroup>
 
   <ItemGroup>

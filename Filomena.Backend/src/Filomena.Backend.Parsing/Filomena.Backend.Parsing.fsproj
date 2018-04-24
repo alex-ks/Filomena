@@ -17,6 +17,7 @@
     <Compile Include="TypedParsingModels.fs" />
     <Compile Include="TypedParser.fs" />
     <Compile Include="UntypedParser.fs" />
+    <Compile Include="PartialParser.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

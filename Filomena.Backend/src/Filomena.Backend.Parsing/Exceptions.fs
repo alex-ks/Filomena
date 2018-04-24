@@ -1,6 +1,7 @@
 namespace Filomena.Backend.Parsing
 
 open Microsoft.FSharp.Compiler.SourceCodeServices
+open Microsoft.FSharp.Compiler
 
 type ErrorSeverity = Warning | Error
 
@@ -29,6 +30,17 @@ module ParsingError =
 
     let ofFSharpErrorInfos (es: FSharpErrorInfo seq) = 
         Seq.map ofFSharpErrorInfo es
+
+    let ofMsgAndRange (msg: string) (range: Range.range) = 
+        { StartLine = range.StartLine
+          StartColumn = range.StartColumn
+          EndLine = range.EndLine
+          EndColumn = range.EndColumn
+          Message = msg
+          Subcategory = System.String.Empty
+          ErrorNumber = -1
+          Severity = ErrorSeverity.Error }
+        
 
 exception NotSupportedException of string
 
