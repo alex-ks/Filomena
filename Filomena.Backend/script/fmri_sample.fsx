@@ -1,6 +1,8 @@
 #load "fmri_decl.fsx"
+#load "plot_decl.fsx"
 
 open Fmri
+open Plot
 
 let f = loadFmri "path/to/fmri"
 let rawFmri = rawData f
@@ -9,43 +11,17 @@ let time, data = List.unzip rawFmri
 
 let cubes = data |> List.map (sliceBySize (5, 5, 5))
 
-let calcFrameDistributions frame = 
-    Map.map (fun _ cube -> cube |> flatten |> histcounts |> fitNormal 3) frame
+let cubes' = rearrange cubes
 
-let distributions = List.map calcFrameDistributions cubes
+let calcCubeDistributions cube =
+    let [compA; compB; compC] = (flatten >> histcounts >> fitNormal 3) cube
+    in compA, compB, compC
 
-let cubeKeys = Map.keys (List.head cubes)
+let components = Map.map (fun _ cubeSeries -> List.map calcCubeDistributions cubeSeries) cubes'
 
-let frames = List.zip time distributions
-
-let a = 
-    frames
-    |> List.collect (fun (t, frame) ->
-        frame
-        |> Map.toList
-        |> List.map (fun (index, components) -> index, t, components))
-    |> List.groupBy (fun (index, _, _) -> index)
-    
-    
-
-(*
-
-есть список кадров-кубов
-точнее есть список время-карта кубов
-а хотим получить карту времени-кубов
-
-
-хотим получить динамику по каждому индексу
-
-*)
-
-// let dynamics = 
-//     cubeKeys 
-//     |> List.map (fun key -> 
-//         distributions
-//         |> List.map (fun (t, distr) -> t, distr.[key]))
-//     |> List.map (fun distrSeries -> 
-//         distrSeries
-//         |> List.map (fun (t, distr) ->
-//             let [fstDistr; sndDistr; thrdDistr] = distr
-//             t, (fstDistr, sndDistr, thrdDistr)))
+for pair in components do
+    let coordinate = pair.Key
+    let compA, compB, compC = List.unzip3 pair.Value
+    do plot time compA (sprintf "Component A of cube at %A" coordinate)
+    do plot time compB (sprintf "Component B of cube at %A" coordinate)
+    do plot time compC (sprintf "Component C of cube at %A" coordinate)

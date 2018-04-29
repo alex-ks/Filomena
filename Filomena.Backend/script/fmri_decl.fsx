@@ -28,6 +28,9 @@ let sliceBySize (width, height, depth) (data: float[,,]) =
     }
     |> Map.ofSeq
 
+let rearrange (ml: ('a, 'b) Map list) = 
+    let lm: ('a, 'b list) Map = Map.empty in lm
+
 let flatten (data: float[,,]) = 
     ignore data
     List.empty<float>
