@@ -190,6 +190,17 @@ module TypedParser =
                        Seq.toList tupleType.GenericArguments,
                        Argument.ofExprs argsExprs)
 
+        | BasicPatterns.NewUnionCase (_t, _case, _args) ->
+            "Unions" |> notSupported
+
+        | BasicPatterns.NewArray (t, argsExprs) ->
+            visitCall (None,
+                       HiddenOps.NewArray,
+                       None,
+                       [],
+                       [ t ],
+                       Argument.ofExprs argsExprs)
+
         | BasicPatterns.Call (objExprOpt, memberOrFunc, typeArgs1, typeArgs2, argsExprs) ->
             visitCall (objExprOpt, 
                        memberOrFunc.FullName, 
