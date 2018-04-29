@@ -106,6 +106,9 @@ module TypedParser =
 
     type Argument = Expression of FSharpExpr | Constant of string * DataType
 
+    let unnamedInput funcName = "@" + funcName + "Input"
+    let unnamedOutput funcName = "@" + funcName + "Output"
+
     module Argument = 
         let ofExprs exprs = exprs |> List.map (Expression)
         let ofInt (i: int) = Constant (string i, PrimitiveTypes.Int)
@@ -115,8 +118,8 @@ module TypedParser =
                             (parsedProgram: ParsedProgram) 
                             (expr: FSharpExpr) =
         let visitCall (objExprOpt, 
-                       compiledFuncName,
-                       fullFuncName, 
+                       fullFuncName,
+                       funcTypeOpt,
                        _typeArgs1, 
                        typeArgs2, 
                        argsExprs) = 
@@ -124,8 +127,7 @@ module TypedParser =
             | Some _ ->
                 "Object method calling" |> notSupported
             | None ->
-                let processArgumentExpr = processFuncArgs parsedProgram predcessors compiledFuncName 
-                
+                let processArgumentExpr = processFuncArgs parsedProgram predcessors fullFuncName
                 let updatedProgram, (Reversed argNames) = 
                     argsExprs
                     |> List.mapi processArgumentExpr
@@ -134,16 +136,28 @@ module TypedParser =
                 let name = 
                     match nameOpt with 
                     | Some str -> str 
-                    | None -> ParsedProgram.escapeName updatedProgram (fullFuncName + "Output")
+                    | None -> ParsedProgram.escapeName updatedProgram (unnamedOutput fullFuncName)
                 let dependencies = findDependencies updatedProgram argNames
-                let operation = { name = fullFuncName;
-                                  inputs = argNames;
-                                  output = name;
-                                  parameters = 
-                                      match typeArgs2 with
-                                      | [] -> None
-                                      | _ -> Some (List.map typeToModel typeArgs2)
-                                  dependencies = Set.union dependencies predcessors } in
+                let operation = 
+                    let template = 
+                        { name = fullFuncName;
+                          inputs = argNames;
+                          output = name;
+                          parameters = 
+                              match typeArgs2 with
+                              | [] -> None
+                              | _ -> Some (List.map typeToModel typeArgs2)
+                          dependencies = Set.union dependencies predcessors }
+                    match argsExprs, funcTypeOpt with
+                    | [], Some t ->
+                        { template with name = HiddenOps.Identity;
+                                        inputs = [ fullFuncName ];
+                                        parameters = Some [ typeToModel t ] }
+                    | [], None ->
+                        unexpected "Renaming must provide value type"
+                    | _, _ ->
+                        template
+                in 
                 updatedProgram 
                 |> ParsedProgram.addMnemonic name (Output operation), (Some operation)
 
@@ -157,13 +171,13 @@ module TypedParser =
             visitExpression nameOpt predcessors' updatedProgram expr2
             
         | BasicPatterns.Let ((bindVar, bindExpr), bodyExpr) ->
-            let updatedProgram, _ = visitExpression (Some bindVar.CompiledName) predcessors parsedProgram bindExpr
+            let updatedProgram, _ = visitExpression (Some bindVar.FullName) predcessors parsedProgram bindExpr
             visitExpression nameOpt predcessors updatedProgram bodyExpr
 
         | BasicPatterns.TupleGet (tupleType, index, tupleExpr) ->
             visitCall (None,
                        HiddenOps.TupleGet,
-                       HiddenOps.TupleGet,
+                       None,
                        [],
                        Seq.toList tupleType.GenericArguments,
                        [Argument.ofInt index; Expression tupleExpr])
@@ -171,15 +185,15 @@ module TypedParser =
         | BasicPatterns.NewTuple (tupleType, argsExprs) ->
             visitCall (None,
                        HiddenOps.NewTuple,
-                       HiddenOps.NewTuple,
+                       None,
                        [],
                        Seq.toList tupleType.GenericArguments,
                        Argument.ofExprs argsExprs)
 
         | BasicPatterns.Call (objExprOpt, memberOrFunc, typeArgs1, typeArgs2, argsExprs) ->
             visitCall (objExprOpt, 
-                       memberOrFunc.CompiledName, 
-                       nameOperation memberOrFunc, 
+                       memberOrFunc.FullName, 
+                       memberOrFunc.FullTypeSafe, 
                        typeArgs1, 
                        typeArgs2, 
                        Argument.ofExprs argsExprs)
@@ -189,12 +203,12 @@ module TypedParser =
                 match nameOpt with
                 | Some name -> 
                     let dependencies = 
-                        match parsedProgram.mnemonics.[value.CompiledName] with
+                        match parsedProgram.mnemonics.[value.FullName] with
                         | Const _ -> []
                         | Output op -> [op]
                         |> Set.ofList
                     let copyOp = { name = HiddenOps.Identity
-                                   inputs = [value.CompiledName]
+                                   inputs = [value.FullName]
                                    output = name
                                    parameters = Some [typeToModel value.FullType]
                                    dependencies = dependencies }
@@ -224,9 +238,9 @@ module TypedParser =
             match argExpr with
             | BasicPatterns.Value value
             | BasicPatterns.Call (None, value, [], [], []) -> 
-                ProgramDiff.empty, value.CompiledName
+                ProgramDiff.empty, value.FullName
             | _ -> 
-                let argName = ParsedProgram.escapeName parsedProgram ("@" + funcName + (string i))
+                let argName = ParsedProgram.escapeName parsedProgram ((unnamedInput funcName) + (string i))
                 let updatedProgram, _ = visitExpression (Some argName) predcessors parsedProgram argExpr in
                 (updatedProgram - parsedProgram), argName
         | Constant (value, t) ->
@@ -259,7 +273,7 @@ module TypedParser =
                     "Functions declaration" |> notSupported
                 else
                     let updatedProgram, _ = 
-                        visitExpression (Some funcOrVal.CompiledName) predcessors program expression
+                        visitExpression (Some funcOrVal.FullName) predcessors program expression
                     visitDeclarations updatedProgram predcessors tail
             
     let (|Module|) (x: FSharpEntity) = if x.IsFSharpModule then Some x else None
@@ -267,6 +281,7 @@ module TypedParser =
     let parseProgramTree (implFile: FSharpImplementationFileContents) =
         match implFile.Declarations with
         | [Entity(Module _, subdecls)] ->
+            do printfn "%A" subdecls
             visitDeclarations ParsedProgram.empty Set.empty subdecls
         | [_] -> 
             failwith "Top-level declaration can be module only"
