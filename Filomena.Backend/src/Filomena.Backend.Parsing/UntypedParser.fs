@@ -98,11 +98,9 @@ module UntypedParser =
         | SynConst.Single _
         | SynConst.String _
         | SynConst.UInt32 _
+        | SynConst.Measure _
         | SynConst.Unit ->
             Ok ()
-
-        | SynConst.Measure _ ->
-            Failed [CheckError (ParsingResources.measuresUnsupportedMsg, Some constRange)]
 
         | _ -> 
             Failed [CheckError (ParsingResources.constantUnsupportedMsg, Some constRange)]
