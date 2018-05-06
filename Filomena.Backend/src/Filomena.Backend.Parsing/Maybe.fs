@@ -1,17 +1,15 @@
 namespace Filomena.Backend.Parsing
 
-type ('t, 'e) Maybe = Ok of 't | Failed of 'e
+module Result = 
+    type ResultBuilder () = 
+        member __.Return x = Ok x
 
-module Maybe = 
-    type MaybeBuilder () = 
-        member this.Return x = Ok x
+        member __.ReturnFrom (m: ('a, 'b) Result) = m
 
-        member this.ReturnFrom (m: ('a, 'b) Maybe) = m
-
-        member this.Bind (m, f) = 
+        member __.Bind (m, f) = 
             match m with
-            | Ok x -> f x
-            | Failed e -> Failed e
+            | Result.Ok x -> f x
+            | Result.Error e -> Result.Error e
 
-    let maybe = MaybeBuilder ()
+    let result = ResultBuilder ()
 

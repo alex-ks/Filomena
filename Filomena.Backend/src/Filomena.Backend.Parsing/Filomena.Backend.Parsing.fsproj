@@ -1,32 +1,32 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-    <NoWarn>$(NoWarn);62</NoWarn>
   </PropertyGroup>
-
   <ItemGroup>
-    <Compile Include="ParsingResources.fs" />
-    <Compile Include="Exceptions.fs" />
-    <Compile Include="TempFile.fs" />
-    <Compile Include="HiddenOps.fs" />
-    <Compile Include="PrimitiveTypes.fs" />
-    <Compile Include="Maybe.fs" />
-    <Compile Include="ProjectHelper.fs" />
-    <Compile Include="TypedParsingModels.fs" />
-    <Compile Include="TypedParser.fs" />
-    <Compile Include="UntypedParser.fs" />
-    <Compile Include="PartialParser.fs" />
-    <Compile Include="Program.fs" />
+    <ProjectReference Include="..\Filomena.Backend.Models\Filomena.Backend.Models.fsproj"/>
+    <ProjectReference Include="..\Filomena.Backend.ResolverClient\Filomena.Backend.ResolverClient.fsproj">
+      <Name>Filomena.Backend.ResolverClient.fsproj</Name>
+    </ProjectReference>
   </ItemGroup>
-
   <ItemGroup>
-    <PackageReference Include="FSharp.Compiler.Service" Version="17.0.1" />
+    <Compile Include="ParsingResources.fs"/>
+    <Compile Include="Errors.fs"/>
+    <Compile Include="Exceptions.fs"/>
+    <Compile Include="TempFile.fs"/>
+    <Compile Include="HiddenOps.fs"/>
+    <Compile Include="PrimitiveTypes.fs"/>
+    <Compile Include="Maybe.fs"/>
+    <Compile Include="ProjectHelper.fs"/>
+    <Compile Include="TypedParsingModels.fs"/>
+    <Compile Include="TypedParser.fs"/>
+    <Compile Include="UntypedParser.fs"/>
+    <Compile Include="PartialParser.fs"/>
+    <Compile Include="Compiler.fs"/>
+    <Compile Include="Program.fs"/>
   </ItemGroup>
-
   <ItemGroup>
-    <ProjectReference Include="..\Filomena.Backend.Models\Filomena.Backend.Models.fsproj" />
+    <PackageReference Include="FSharp.Compiler.Service" Version="17.0.1"/>
+    <PackageReference Include="TaskBuilder.fs" Version="1.1.1"/>
   </ItemGroup>
-
 </Project>

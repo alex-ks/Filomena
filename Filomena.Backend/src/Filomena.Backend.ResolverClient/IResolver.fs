@@ -6,3 +6,4 @@ type IResolver =
     abstract member GetContentAsync: AtomId -> AtomContent Task
     abstract member CreateAsync: AtomId seq -> AtomContent -> AtomId Task
     abstract member GetInfoAsync: AtomId -> AtomInfo Task
+    abstract member ExistsAsync: AtomId -> bool Task

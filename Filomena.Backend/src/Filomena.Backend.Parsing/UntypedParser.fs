@@ -4,34 +4,29 @@ open Microsoft.FSharp.Compiler
 open Microsoft.FSharp.Compiler.SourceCodeServices
 open Microsoft.FSharp.Compiler.Ast
 
-open Filomena.Backend.Parsing // to hide ParserDetail union with Maybe union
 open Filomena.Backend.Parsing.ProjectHelper
 
+open FSharp.Core // to hide ParserDetail from FSharp.Compiler.Ast
+
 module UntypedParser =
-    type CheckError = CheckError of string * Range.range option
-
-    type ParseErrors = 
-    | CheckErrors of CheckError list 
-    | FSharpErrors of FSharpErrorInfo []
-
     let checkReduce accum next = 
         match next with
         | Ok () -> accum
-        | Failed errors -> 
+        | Error errors -> 
             match accum with
-            | Ok () -> Failed errors
-            | Failed accumErrors -> Failed (accumErrors @ errors)
+            | Ok () -> Error errors
+            | Error accumErrors -> Error (accumErrors @ errors)
 
     let gatherReduce accum next =
         match next with
         | Ok modulesList ->
             match accum with
             | Ok accumList -> Ok (accumList @ modulesList)
-            | Failed errorsList -> Failed errorsList
-        | Failed errorsList -> 
+            | Error errorsList -> Error errorsList
+        | Error errorsList -> 
             match accum with
-            | Ok _ -> Failed errorsList
-            | Failed accumErrors -> Failed (accumErrors @ errorsList)
+            | Ok _ -> Error errorsList
+            | Error accumErrors -> Error (accumErrors @ errorsList)
     
     module Ident = 
         let idText (ident: Ident) = ident.idText
@@ -76,9 +71,9 @@ module UntypedParser =
             let parseFileResults = checker.ParseFile (fileName, source, parsingOptions) |> Async.RunSynchronously  
             match parseFileResults.ParseTree with
             | Some tree -> Ok tree
-            | None -> Failed parseFileResults.Errors
+            | None -> Error parseFileResults.Errors
         | _ ->
-            Failed (List.toArray errors)
+            Error (List.toArray errors)
         
 
     let getUntypedTree source = 
@@ -103,7 +98,7 @@ module UntypedParser =
             Ok ()
 
         | _ -> 
-            Failed [CheckError (ParsingResources.constantUnsupportedMsg, Some constRange)]
+            Error [UntypedCheckError (ParsingResources.constantUnsupportedMsg, Some constRange)]
 
     let rec visitPattern = function
         | SynPat.LongIdent _ -> Ok ()
@@ -135,10 +130,10 @@ module UntypedParser =
         | SynPat.StructTuple (_, range)
         | SynPat.Typed (_, _, range)
         | SynPat.ArrayOrList (_, _, range) ->
-            Failed [CheckError (ParsingResources.patternUnsupportedMsg, Some range)]
+            Error [UntypedCheckError (ParsingResources.patternUnsupportedMsg, Some range)]
             
         | SynPat.FromParseError (_, range) ->
-            Failed [CheckError (ParsingResources.parseErrorMsg, Some range)]
+            Error [UntypedCheckError (ParsingResources.parseErrorMsg, Some range)]
 
     let rec visitExpression = function
         | SynExpr.Const (c, range) -> visitConst range c
@@ -155,18 +150,18 @@ module UntypedParser =
                       visitExpression trueBranch ]
                 |> List.reduce checkReduce
             else
-                Failed [CheckError (ParsingResources.parseErrorMsg, Some range)]
+                Error [UntypedCheckError (ParsingResources.parseErrorMsg, Some range)]
                 
         | SynExpr.LetOrUse (isRec, isUse, bindings, body, wholeRange) ->
-            if isRec then Failed [CheckError (ParsingResources.recursionIsNotAllowedMsg, Some wholeRange)]
-            elif isUse then Failed [CheckError (ParsingResources.usingIsNotAllowedMsg, Some wholeRange)]
+            if isRec then Error [UntypedCheckError (ParsingResources.recursionIsNotAllowedMsg, Some wholeRange)]
+            elif isUse then Error [UntypedCheckError (ParsingResources.usingIsNotAllowedMsg, Some wholeRange)]
             else
                 [ visitBindings bindings
                   visitExpression body ] 
                 |> List.reduce checkReduce
 
         | SynExpr.Lambda (_isFromMethod, _isLaterPart, _simplePatterns, _body, range) ->
-            Failed [CheckError (ParsingResources.lambdasAreUnsupportedMsg, Some range)]
+            Error [UntypedCheckError (ParsingResources.lambdasAreUnsupportedMsg, Some range)]
 
         | SynExpr.App (_, isInfix, funcExpr, argExpr, _) ->
             if isInfix then 
@@ -197,21 +192,21 @@ module UntypedParser =
             visitExpression expr 
 
         | SynExpr.Match (_seqPoint, _expr, _matchClauses, _isExnMatch, range) ->
-            Failed [CheckError (ParsingResources.matchIsUnsupportedMsg, Some range)]
+            Error [UntypedCheckError (ParsingResources.matchIsUnsupportedMsg, Some range)]
 
         | SynExpr.FromParseError (_, range) ->
-            Failed [CheckError (ParsingResources.parseErrorMsg, Some range)]
+            Error [UntypedCheckError (ParsingResources.parseErrorMsg, Some range)]
 
         | _ -> 
             // TODO: implement
-            Failed [CheckError (ParsingResources.notImplementedMsg, None)]
+            Error [UntypedCheckError (ParsingResources.notImplementedMsg, None)]
     
     and visitBindings bindings = 
         let visitBinding binding = 
             let (Binding (_, kind, _, isMutable, _, _, _, pattern, _, body, range, _)) = binding in
             match kind with
             | SynBindingKind.DoBinding ->
-                Failed [CheckError (ParsingResources.suchDoUsageNotAllowedMsg, Some range)]
+                Error [UntypedCheckError (ParsingResources.suchDoUsageNotAllowedMsg, Some range)]
 
             | SynBindingKind.NormalBinding ->
                 if not isMutable then
@@ -219,10 +214,10 @@ module UntypedParser =
                       visitExpression body ]
                     |> List.reduce checkReduce
                 else
-                    Failed [CheckError (ParsingResources.mutableIsNotAllowedMsg, Some range)]
+                    Error [UntypedCheckError (ParsingResources.mutableIsNotAllowedMsg, Some range)]
 
             | SynBindingKind.StandaloneExpression ->
-                Failed [CheckError (ParsingResources.standaloneExprIsNotAllowed, Some range)]
+                Error [UntypedCheckError (ParsingResources.standaloneExprIsNotAllowed, Some range)]
 
         bindings 
         |> Seq.map visitBinding 
@@ -235,24 +230,24 @@ module UntypedParser =
                 if not isRec then
                     match visitBindings bindings with
                     | Ok () -> Ok []
-                    | Failed lst -> Failed lst
+                    | Error lst -> Error lst
                 else
-                    Failed [CheckError (ParsingResources.recursionIsNotAllowedMsg, Some range)]
+                    Error [UntypedCheckError (ParsingResources.recursionIsNotAllowedMsg, Some range)]
 
             | SynModuleDecl.DoExpr (_sequencePointInfo, expression, _) ->
                 match visitExpression expression with
                 | Ok () -> Ok []
-                | Failed lst -> Failed lst
+                | Error lst -> Error lst
 
             | SynModuleDecl.Open (ident, _) ->
                 Ok [Ident.toString ident]
 
             | SynModuleDecl.NestedModule _ ->
-                Failed [CheckError (ParsingResources.nestedModulesNotAllowedMsg, None)]
+                Error [UntypedCheckError (ParsingResources.nestedModulesNotAllowedMsg, None)]
 
             | _ ->
                 // TODO: handle all cases
-                Failed [CheckError (ParsingResources.notImplementedMsg, None)])
+                Error [UntypedCheckError (ParsingResources.notImplementedMsg, None)])
         |> Seq.reduce gatherReduce
 
     let visitModulesAndNamespaces modulesOrNss = 
@@ -261,11 +256,11 @@ module UntypedParser =
             let (SynModuleOrNamespace(longIdent, isRecursive, isModule, moduleDecls, _, _, _, range)) = moduleOrNs
             let moduleName = Ident.listToString longIdent
             if moduleName |> isTemp then 
-                Failed [CheckError (ParsingResources.noModuleNameMsg, Some range)]
+                Error [UntypedCheckError (ParsingResources.noModuleNameMsg, Some range)]
             elif isRecursive then 
-                Failed [CheckError (ParsingResources.recursionIsNotAllowedMsg, Some range)]
+                Error [UntypedCheckError (ParsingResources.recursionIsNotAllowedMsg, Some range)]
             elif not isModule then 
-                Failed [CheckError (ParsingResources.namespaceIsNotAllowed, Some range)]
+                Error [UntypedCheckError (ParsingResources.namespaceIsNotAllowed, Some range)]
             else 
                 visitDeclarations moduleDecls)
         |> Seq.reduce gatherReduce
@@ -279,8 +274,8 @@ module UntypedParser =
                 let (ParsedImplFileInput(_, _, _, _, _, modules, _)) = file in
                 match visitModulesAndNamespaces modules with
                 | Ok modulesList -> Ok modulesList
-                | Failed errorsList -> Failed (CheckErrors errorsList)
+                | Error errorsList -> Error (UntypedCheckErrors errorsList)
             | ParsedInput.SigFile _ ->
-                Failed (CheckErrors [CheckError (ParsingResources.signatureFilesAreNotAllowed, None)])
-        | Failed errors -> 
-            Failed (FSharpErrors errors)
+                Error (UntypedCheckErrors [UntypedCheckError (ParsingResources.signatureFilesAreNotAllowed, None)])
+        | Error errors -> 
+            Error (FSharpErrors errors)

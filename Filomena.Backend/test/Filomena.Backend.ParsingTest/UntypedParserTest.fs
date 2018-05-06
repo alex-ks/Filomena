@@ -11,9 +11,9 @@ module UntypedParserTest =
         
         let parseResult = parseAndCheckScript source in
         match parseResult with
-        | Failed (CheckErrors [CheckError (msg, _)]) ->
+        | Error (UntypedCheckErrors [UntypedCheckError (msg, _)]) ->
             do Assert.Equal(expected = "Module name must be defined", actual = msg)
-        | Failed (CheckErrors _) -> 
+        | Error (UntypedCheckErrors _) -> 
             do Assert.True (false, "Unexpected error")
         | _ -> 
             do Assert.True (false, "Unexpected function result")
@@ -63,7 +63,7 @@ module UntypedParserTest =
         """
         let parseResults = parseAndCheckScript source in
         match parseResults with
-        | Failed (CheckErrors [CheckError (msg, _)]) ->
+        | Error (UntypedCheckErrors [UntypedCheckError (msg, _)]) ->
             Assert.Equal (expected = ParsingResources.nestedModulesNotAllowedMsg, actual = msg)
         | _ ->
             Assert.True (false, "Submodule error must be returned")
@@ -77,7 +77,7 @@ module UntypedParserTest =
         """
         let parseResults = parseAndCheckScript source in
         match parseResults with
-        | Failed (CheckErrors [CheckError (msg, _)]) ->
+        | Error (UntypedCheckErrors [UntypedCheckError (msg, _)]) ->
             Assert.Equal (expected = ParsingResources.namespaceIsNotAllowed, actual = msg)
         | _ ->
             Assert.True (false, "Namespace error must be returned")

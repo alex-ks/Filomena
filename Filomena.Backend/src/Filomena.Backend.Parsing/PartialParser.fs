@@ -1,10 +1,9 @@
 namespace Filomena.Backend.Parsing
 
-open Microsoft.FSharp.Compiler
-open Microsoft.FSharp.Compiler.SourceCodeServices
 open Microsoft.FSharp.Compiler.Ast
 
-open Filomena.Backend.Parsing // to hide ParserDetail union with Maybe union
+open FSharp.Core // to hide ParserDetail union
+
 open Filomena.Backend.Parsing.ProjectHelper
 open Filomena.Backend.Parsing.UntypedParser
 open Filomena.Backend.Parsing.Exceptions
@@ -56,5 +55,5 @@ module PartialParser =
                 visitModules modules
             | ParsedInput.SigFile _ ->
                 notSupported ParsingResources.signatureFilesAreNotAllowed
-        | Failed errors -> 
+        | Error errors -> 
             checkFailed (ParsingError.ofFSharpErrorInfos errors |> Seq.toList)

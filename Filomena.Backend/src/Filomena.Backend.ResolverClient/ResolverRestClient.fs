@@ -24,6 +24,12 @@ module NetModels =
 open NetModels
 
 type ResolverRestClient(resolverUrl) = 
+    let buildInfoUrl (atomId: AtomId) =
+        let url = Uri (Uri resolverUrl, sprintf "/api/atoms/%s/%s/info" atomId.Kind atomId.Name)
+        match atomId.Version with
+        | null -> url
+        | version -> Uri (url, "?version=" + version)
+
     member __.ResolveAsync (atomIds: AtomId seq) = 
         task {
             use client = new HttpClient ()
@@ -84,12 +90,7 @@ type ResolverRestClient(resolverUrl) =
     member __.GetInfoAsync (atomId: AtomId) = 
         task {
             use client = new HttpClient ()
-            let query = 
-                let url = Uri (Uri resolverUrl, sprintf "/api/atoms/%s/%s/info" atomId.Kind atomId.Name)
-                match atomId.Version with
-                | null -> url
-                | version -> Uri (url, "?version=" + version)
-            in
+            let query = buildInfoUrl atomId
             let! response = client.GetAsync query
             let! body = response.Content.ReadAsStringAsync () in
             match response.StatusCode with
@@ -99,10 +100,20 @@ type ResolverRestClient(resolverUrl) =
                 return raise (InvalidOperationException body) 
         }
 
+    member __.ExistsAsync (atomId: AtomId) = 
+        task {
+            use client = new HttpClient ()
+            let query = buildInfoUrl atomId
+            in
+            let! response = client.GetAsync query in
+            return response.StatusCode = HttpStatusCode.OK
+        }
+
     interface IResolver with
         member this.ResolveAsync atomIds = this.ResolveAsync atomIds
         member this.GetContentAsync atomId = this.GetContentAsync atomId
         member this.CreateAsync depsIds content = this.CreateAsync depsIds content
         member this.GetInfoAsync atomId = this.GetInfoAsync atomId
+        member this.ExistsAsync atomId = this.ExistsAsync atomId
         
         
