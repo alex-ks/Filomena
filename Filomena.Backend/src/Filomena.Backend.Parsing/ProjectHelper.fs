@@ -40,6 +40,8 @@ module ProjectHelper =
             sprintf "/usr/share/dotnet/sdk/%s/FSharp/FSharp.Core.dll" sdkVersion
         | PlatformID.Unix, _ -> // MacOS
             sprintf "/usr/local/share/dotnet/sdk/%s/FSharp/FSharp.Core.dll" sdkVersion
+        | PlatformID.Win32NT, _ -> 
+            sprintf "C:\\Program Files\\dotnet\\sdk\\%s\\FSharp\\FSharp.Core.dll" sdkVersion
         | _ ->
             unexpected "OS is currently unsupported"
 
@@ -56,13 +58,9 @@ module ProjectHelper =
         name.ToLower().StartsWith(tempFileNamePrefix)
 
     let sysLib name = 
-        match Environment.OSVersion.Platform with
-        | PlatformID.Unix ->
-            let sysDir = Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory ()
-            let (++) a b = System.IO.Path.Combine(a,b)    
-            sysDir ++ name + ".dll"
-        | _ ->
-            (string Environment.OSVersion.Platform) |> notSupported
+        let sysDir = Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory ()
+        let (++) a b = System.IO.Path.Combine(a,b)    
+        sysDir ++ name + ".dll"
 
     let changeExtension ext fileName = 
         Path.ChangeExtension (fileName, ext)
