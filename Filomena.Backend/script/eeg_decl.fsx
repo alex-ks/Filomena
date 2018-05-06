@@ -1,19 +1,24 @@
 module Eeg
-    type Eeg = (string, float list) Map
 
-    let loadEeg (id: string) : Eeg = 
-        do ignore id
-        Map.empty
+#load "si_decl.fsx"
 
-    let dropChannel name eeg = 
-        Map.remove name eeg
+open SI
 
-    let dropChannels names eeg = 
-        let namesSet = Set.ofList names
-        eeg
-        |> Map.filter (fun key _ -> not (Set.contains key namesSet))
+type Eeg = (string, float list) Map
 
-    let filterFrequences (low: int) (high: int) eeg = 
-        do ignore low
-        do ignore high
-        eeg
+let loadEeg (id: string) : Eeg = 
+    do ignore id
+    Map.empty
+
+let dropChannel name eeg = 
+    Map.remove name eeg
+
+let dropChannels names eeg = 
+    let namesSet = Set.ofList names
+    eeg
+    |> Map.filter (fun key _ -> not (Set.contains key namesSet))
+
+let filterFrequences (low: float<Hz>) (high: float<Hz>) eeg = 
+    do ignore low
+    do ignore high
+    eeg

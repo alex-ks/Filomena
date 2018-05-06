@@ -3,9 +3,14 @@ module SI
 [<Measure>] type s
 [<Measure>] type ms
 [<Measure>] type m
+[<Measure>] type mm
+[<Measure>] type Hz = 1/s
 
-let time = 25<ms>
+module ms =
+    let toSec (x: float<ms>) = x / 1000.<ms/s>
+    let toSecInt (x: int<ms>) = x / 1000<ms/s>
 
-let dist = 100<m>
+module s = 
+    let toMs (x: float<s>) = x * 1000.<ms/s>
+    let toMsInt (x: int<s>) = x * 1000<ms/s>
 
-let speed = dist / time
