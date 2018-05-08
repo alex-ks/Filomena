@@ -6,25 +6,27 @@ open ProjectHelper
 open Exceptions
 open System.Reflection.Metadata
 
+type ModuleSource = WorkflowSource of string | DeclSource of string
+
 module TypedParser =
     let checker = FSharpChecker.Create(keepAssemblyContents=true)
     let defaultFileVersion = 0
     
-    let getProjectOptions fileName optNames = 
+    let getProjectOptions filesNames projName = 
         let compilerParams = 
             [| yield "--simpleresolution" 
                yield "--noframework" 
                yield "--debug:full" 
                yield "--define:DEBUG" 
                yield "--optimize-" 
-               yield "--out:" + (changeToDll fileName)
+               yield "--out:" + (changeToDll projName)
                yield "--doc:test.xml" 
                yield "--warn:3" 
                yield "--fullpaths" 
                yield "--flaterrors" 
                yield "--target:library"             
-               for name in optNames -> name
-               yield fileName
+               for name in filesNames -> 
+                   name
                let references =
                  [ sysLib "mscorlib" 
                    sysLib "System"
@@ -33,18 +35,46 @@ module TypedParser =
                    sysLib "System.Private.CoreLib"
                    fscorePath ]
                for r in references -> "-r:" + r |]
-        let projectName = changeToFsproj fileName
+        let projectName = changeToFsproj projName
         checker.GetProjectOptionsFromCommandLineArgs (projectName, compilerParams)
 
-    let getTypedTreeFromProject fileName optNames =
-        let projectOptions = getProjectOptions fileName optNames
+    let performTypedCheck declNames wfNames =
+        let projectOptions = getProjectOptions (Seq.append declNames wfNames) (Seq.last wfNames)
         projectOptions
         |> checker.ParseAndCheckProject
         |> Async.RunSynchronously
     
     let dispose (x: System.IDisposable) = x.Dispose ()
 
-    let getProjectTypedTree fileName source optSources = 
+    let checkSourcesTyped declSources wfSources = 
+        let generateFilesFor sources = 
+            sources
+            |> Seq.map (fun code -> new TempFile(tempFileName (), code))
+            |> Seq.toList
+        let getNames (files: TempFile seq) = files |> Seq.map (fun f -> f.Name)        
+
+        let declFiles = generateFilesFor declSources
+        let wfFiles = generateFilesFor wfSources
+
+        use _guard = { new System.IDisposable with
+                       member __.Dispose () = for f in (Seq.append declFiles wfFiles) do dispose f }
+        
+        let wfNames = getNames wfFiles
+        let declNames = getNames declFiles
+        let checkResults = performTypedCheck declNames wfNames in
+        if checkResults.HasCriticalErrors then
+            Error checkResults.Errors
+        else
+            let fileTrees = 
+                checkResults.AssemblyContents.ImplementationFiles
+                |> List.map (fun f -> f.FileName, f)
+                |> Map.ofList
+            let wfTrees = 
+                wfNames
+                |> Seq.map (fun name -> fileTrees.[name])
+            Ok (wfTrees, checkResults.Errors)            
+    
+    let getProjectTypedTree' fileName source optSources = 
         let file = new TempFile (fileName, source)
         let optFiles = 
             optSources
@@ -55,7 +85,7 @@ module TypedParser =
         let optNames = 
             optFiles
             |> Seq.map (fun f -> f.Name)
-        getTypedTreeFromProject (file.Name) optNames
+        performTypedCheck (Seq.append optNames [file.Name]) [file.Name]
     
     type DataType = Filomena.Backend.Models.DataType
 
@@ -303,7 +333,7 @@ module TypedParser =
         
     let parse optSources source = 
         let targetName = tempFileName ()
-        let checkResults = getProjectTypedTree targetName source optSources
+        let checkResults = getProjectTypedTree' targetName source optSources
         if checkResults.HasCriticalErrors then
             checkResults.Errors 
             |> ParsingError.ofFSharpErrorInfos 
@@ -317,6 +347,34 @@ module TypedParser =
             let errors = ParsingError.ofFSharpErrorInfos checkResults.Errors
             let graph = 
                 parseProgramTree targetFile
+                |> ParsedProgram.toComputationGraph
+            graph, errors
+
+    let parse' mdSources = 
+        let declSources = 
+            mdSources
+            |> Seq.fold (fun wfs -> function | DeclSource source -> source :: wfs
+                                             | WorkflowSource _ -> wfs) 
+                        []
+            |> Seq.rev
+        let wfSources = 
+            mdSources
+            |> Seq.fold (fun wfs -> function | WorkflowSource source -> source :: wfs
+                                             | DeclSource _ -> wfs) 
+                        []
+            |> Seq.rev
+
+        let checkResults = checkSourcesTyped declSources wfSources
+        match checkResults with
+        | Error errors ->
+            errors
+            |> ParsingError.ofFSharpErrorInfos 
+            |> Seq.toList
+            |> checkFailed 
+        | Ok (trees, checkWarnings) ->
+            let errors = ParsingError.ofFSharpErrorInfos checkWarnings
+            let graph = 
+                parseProgramTree (Seq.last trees)
                 |> ParsedProgram.toComputationGraph
             graph, errors
 

@@ -2,12 +2,11 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.0</TargetFramework>
+    <NoWarn>$(NoWarn);62</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Filomena.Backend.Models\Filomena.Backend.Models.fsproj"/>
-    <ProjectReference Include="..\Filomena.Backend.ResolverClient\Filomena.Backend.ResolverClient.fsproj">
-      <Name>Filomena.Backend.ResolverClient.fsproj</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\Filomena.Backend.ResolverClient\Filomena.Backend.ResolverClient.fsproj"/>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ParsingResources.fs"/>
