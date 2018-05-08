@@ -79,20 +79,20 @@ module TypedParser =
 
     // TODO: handle measure types?
     let rec typeToModel (t: FSharpType) =
-        if PrimitiveTypes.TypeMap |> Map.containsKey t.TypeDefinition.DisplayName then
-            PrimitiveTypes.TypeMap.[t.TypeDefinition.DisplayName]
-        else
-            let name = 
+        let name = 
+            if PrimitiveTypes.TypeMap |> Map.containsKey t.TypeDefinition.DisplayName then
+                t.TypeDefinition.DisplayName
+            else
                 match t.TypeDefinition.TryFullName with
                 | Some fullName -> fullName
                 | None -> t.TypeDefinition.DisplayName
             
-            let parameters = 
-                match t.GenericArguments |> Seq.toList with
-                | [] -> None             
-                | _ -> Some (t.GenericArguments |> Seq.map typeToModel |> Seq.toList)
-            in
-            { DataType.name = name; DataType.parameters = parameters }
+        let parameters = 
+            match t.GenericArguments |> Seq.toList with
+            | [] -> None             
+            | _ -> Some (t.GenericArguments |> Seq.map typeToModel |> Seq.toList)
+        in
+        { DataType.name = name; DataType.parameters = parameters }
 
     let (|Reversed|) lst = List.rev lst
 
