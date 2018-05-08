@@ -29,10 +29,7 @@ module Module =
         | any -> any |> sprintf "Kind %s is not supported" |> ArgumentException |> raise
 
 type Compiler(resolver: IResolver) = 
-    let wait (t: 'a Task) = 
-        t.GetAwaiter().GetResult()
-
-    let getOriginAsync (modulesTask) md = 
+    let getOriginAsync modulesTask md = 
         task {
             let! modules = modulesTask
             let declSuspect = Declaration { name = md; version = null }
@@ -82,11 +79,11 @@ type Compiler(resolver: IResolver) =
                 let! sources = gatherSourcesAsync modules
                 let program, errors = TypedParser.parse' sources in
                 if not (Seq.exists (fun e -> e.Severity = ErrorSeverity.Error) errors) then
-                    program
+                    return program
                 else
-                    errors |> Seq.toList |> checkFailed
+                    return errors |> Seq.toList |> checkFailed
             | Error (UntypedCheckErrors errors) -> 
-                errors |> List.map (ParsingError.ofUntypedCheckError) |> checkFailed
+                return errors |> List.map (ParsingError.ofUntypedCheckError) |> checkFailed
             | Error (FSharpErrors errors) ->
-                ParsingError.ofFSharpErrorInfos errors |> Seq.toList |> checkFailed
+                return ParsingError.ofFSharpErrorInfos errors |> Seq.toList |> checkFailed
         }

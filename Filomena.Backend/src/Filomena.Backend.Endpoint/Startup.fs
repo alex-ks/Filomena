@@ -11,6 +11,8 @@ open Microsoft.AspNetCore.Cors.Infrastructure
 open System.Linq
 open Newtonsoft.Json
 open Giraffe.Serialization
+open Filomena.Backend.ResolverClient
+open Filomena.Backend.Parsing
 
 
 type Startup() =
@@ -29,6 +31,11 @@ type Startup() =
                 Formatting = Formatting.Indented)
 
         do ignore <| services.AddGiraffe ()
+
+        let resolverUrl = "http://ecclesia.ict.nsc.ru:27945"
+
+        do ignore <| services.AddTransient<IResolver> (fun _ -> ResolverRestClient resolverUrl :> IResolver)
+        do ignore <| services.AddTransient<Compiler> ()
 
         do ignore <| services.AddSingleton<IJsonSerializer>(NewtonsoftJsonSerializer(optionSerializerSettings))
 

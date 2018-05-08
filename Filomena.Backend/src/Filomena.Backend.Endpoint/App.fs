@@ -14,16 +14,16 @@ type CompileRequest = { source: string }
 
 type PartialResponse = { name: string; opens: string list }  
 
-let compile { source = code } = 
-    let resolver = ResolverRestClient "http://localhost:7945"
-    let compiler = Compiler resolver
-    try
-        code
-        |> compiler.Compile
-        |> json
-    with 
-    | CheckException errors -> RequestErrors.BAD_REQUEST (string errors)
-    | e -> RequestErrors.BAD_REQUEST (string e)
+let compile { source = code }: HttpHandler = fun next context -> 
+    let compiler = context.GetService<Compiler> ()
+    task {
+        try
+            let! program = compiler.Compile code
+            return! (json program next context)
+        with 
+        | CheckException errors -> return! RequestErrors.BAD_REQUEST (string errors) next context
+        | e -> return! RequestErrors.BAD_REQUEST (string e) next context
+    }
 
 
 let partialCheck { source = code } =
