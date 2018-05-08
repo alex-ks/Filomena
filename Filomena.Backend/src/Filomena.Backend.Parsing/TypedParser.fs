@@ -126,7 +126,7 @@ module TypedParser =
                 unexpected "There must be only operation outputs")
         |> Set.ofList
 
-    let operators = Set.ofList ["+"; "-"; "*"; "/"]
+    let operators = Set.ofList ["+"; "-"; "*"; "/"; "%"; "**"]
 
     let nameOperation (op: FSharpMemberOrFunctionOrValue) = 
         match op.DisplayName.Split(' ') with
@@ -229,7 +229,7 @@ module TypedParser =
 
         | BasicPatterns.Call (objExprOpt, memberOrFunc, typeArgs1, typeArgs2, argsExprs) ->
             visitCall (objExprOpt, 
-                       memberOrFunc.FullName, 
+                       nameOperation memberOrFunc, 
                        memberOrFunc.FullTypeSafe, 
                        typeArgs1, 
                        typeArgs2, 
