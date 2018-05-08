@@ -59,14 +59,14 @@ type Compiler(resolver: IResolver) =
                 |> resolver.ResolveAsync
             let mdSources = 
                 contents
-                |> Seq.map (fun content -> Encoding.UTF8.GetString content.Content)
-                |> Seq.zip modules
+                |> Seq.map (fun content -> content.Kind, Encoding.UTF8.GetString content.Content)
             return 
                 mdSources
-                |> Seq.map (fun (md, source) -> 
-                    match md with
-                    | Workflow _ -> WorkflowSource source
-                    | Declaration _ -> DeclSource source)
+                |> Seq.map (fun (kind, source) -> 
+                    match kind with
+                    | Module.WorkflowKind -> WorkflowSource source
+                    | Module.DeclKind -> DeclSource source
+                    | any -> any |> sprintf "Kind %s is not supported" |> ArgumentException |> raise)
                 |> Seq.toList                
         }
         
