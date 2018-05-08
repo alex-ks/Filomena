@@ -189,15 +189,11 @@ module TypedParser =
                         template
                 in 
                 updatedProgram 
-                |> ParsedProgram.addMnemonic name (Output operation), (Some operation)
+                |> ParsedProgram.addMnemonic name (Output operation), (Set.add operation predcessors)
 
         match expr with
         | BasicPatterns.Sequential (expr1, expr2) ->
-            let updatedProgram, depOpt = visitExpression None predcessors parsedProgram expr1
-            let predcessors' = 
-                match depOpt with
-                | Some op -> predcessors |> Set.add op
-                | None -> predcessors
+            let updatedProgram, predcessors' = visitExpression None predcessors parsedProgram expr1
             visitExpression nameOpt predcessors' updatedProgram expr2
             
         | BasicPatterns.Let ((bindVar, bindExpr), bodyExpr) ->
@@ -257,7 +253,7 @@ module TypedParser =
                     |> ParsedProgram.addMnemonic name (Output copyOp)
                 | None ->
                     parsedProgram
-            updatedProgram, None
+            updatedProgram, predcessors
 
         | BasicPatterns.Const (objVal, fsType) ->
             let dataType = typeToModel fsType
@@ -268,7 +264,7 @@ module TypedParser =
             let updatedProgram = 
                 parsedProgram
                 |> ParsedProgram.addMnemonic name (Const (serializeConst objVal, dataType))
-            updatedProgram, None
+            updatedProgram, predcessors
 
         | _ ->
             printfn "%A" expr
@@ -294,42 +290,42 @@ module TypedParser =
     let rec visitDeclarations program predcessors declarations = 
         match declarations with
         | [] ->
-            program
-        | _ ->
-            let decl, tail = List.head declarations, List.tail declarations
+            program, predcessors
+        | decl :: tail ->
             match decl with
             | Entity _ ->
                 failwith "Nested types or modules are not allowed"
 
             | InitAction expr ->
-                let updatedProgram, depOpt = visitExpression None predcessors program expr
-                let predcessors' = 
-                    match depOpt with
-                    | Some op -> predcessors |> Set.add op
-                    | None -> predcessors
+                let updatedProgram, predcessors' = visitExpression None predcessors program expr
                 visitDeclarations updatedProgram predcessors' tail
 
             | MemberOrFunctionOrValue (funcOrVal, _, expression) ->
                 if (|Function|) funcOrVal then
                     "Functions declaration" |> notSupported
                 else
-                    let updatedProgram, _ = 
+                    let updatedProgram, predcessors' = 
                         visitExpression (Some funcOrVal.FullName) predcessors program expression
-                    visitDeclarations updatedProgram predcessors tail
+                    visitDeclarations updatedProgram predcessors' tail
             
     let (|Module|) (x: FSharpEntity) = if x.IsFSharpModule then Some x else None
     
-    let parseProgramTree (implFile: FSharpImplementationFileContents) =
-        match implFile.Declarations with
-        | [Entity(Module _, subdecls)] ->
-            do printfn "%A" subdecls
-            visitDeclarations ParsedProgram.empty Set.empty subdecls
-        | [_] -> 
-            failwith "Top-level declaration can be module only"
-        | [] ->
-            failwith "Empty file"
-        | _ ->
-            failwith "Too many declarations"
+    let parseProgramTree (implFiles: FSharpImplementationFileContents seq) =
+        let program, _ = 
+            implFiles
+            |> Seq.fold (fun (program, predcessors) implFile ->
+                            match implFile.Declarations with
+                            | [Entity(Module _, subdecls)] ->
+                                do printfn "%A" subdecls
+                                visitDeclarations program predcessors subdecls
+                            | [_] -> 
+                                failwith "Top-level declaration can be module only"
+                            | [] ->
+                                failwith "Empty file"
+                            | _ ->
+                                failwith "Too many declarations")
+                        (ParsedProgram.empty, Set.empty)
+        in program        
         
     let parse optSources source = 
         let targetName = tempFileName ()
@@ -346,7 +342,7 @@ module TypedParser =
                 |> List.exactlyOne
             let errors = ParsingError.ofFSharpErrorInfos checkResults.Errors
             let graph = 
-                parseProgramTree targetFile
+                parseProgramTree [targetFile]
                 |> ParsedProgram.toComputationGraph
             graph, errors
 
@@ -374,7 +370,8 @@ module TypedParser =
         | Ok (trees, checkWarnings) ->
             let errors = ParsingError.ofFSharpErrorInfos checkWarnings
             let graph = 
-                parseProgramTree (Seq.last trees)
+                trees
+                |> parseProgramTree
                 |> ParsedProgram.toComputationGraph
             graph, errors
 
