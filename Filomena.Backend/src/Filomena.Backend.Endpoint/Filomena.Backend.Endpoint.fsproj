@@ -24,7 +24,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../Filomena.Backend.Parsing/Filomena.Backend.Parsing.fsproj" />
-    <ProjectReference Include="../Filomena.Backend.SourceCodeServices/Filomena.Backend.SourceCodeServices.fsproj" />
   </ItemGroup>
 
 </Project>
