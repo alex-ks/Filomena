@@ -24,7 +24,8 @@ module TypedParser =
                yield "--warn:3" 
                yield "--fullpaths" 
                yield "--flaterrors" 
-               yield "--target:library"             
+               yield "--target:library"
+               yield "--mlcompatibility"
                for name in filesNames -> 
                    name
                let references =

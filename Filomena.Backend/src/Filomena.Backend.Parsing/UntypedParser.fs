@@ -53,6 +53,7 @@ module UntypedParser =
                yield "--fullpaths" 
                yield "--flaterrors" 
                yield "--target:library" 
+               yield "--mlcompatibility"
                yield fileName
                let references =
                  [ sysLib "mscorlib" 
