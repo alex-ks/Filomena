@@ -75,19 +75,6 @@ module TypedParser =
                 |> Seq.map (fun name -> fileTrees.[name])
             Ok (wfTrees, checkResults.Errors)            
     
-    let getProjectTypedTree' fileName source optSources = 
-        let file = new TempFile (fileName, source)
-        let optFiles = 
-            optSources
-            |> Seq.map (fun code -> new TempFile(tempFileName (), code))
-            |> Seq.toList
-        use _guard = { new System.IDisposable with
-                       member __.Dispose () = for f in file::optFiles do dispose f }
-        let optNames = 
-            optFiles
-            |> Seq.map (fun f -> f.Name)
-        performTypedCheck (Seq.append optNames [file.Name]) [file.Name]
-    
     type DataType = Filomena.Backend.Models.DataType
 
     // TODO: handle measure types?
@@ -327,27 +314,8 @@ module TypedParser =
                                 failwith "Too many declarations")
                         (ParsedProgram.empty, Set.empty)
         in program        
-        
-    let parse optSources source = 
-        let targetName = tempFileName ()
-        let checkResults = getProjectTypedTree' targetName source optSources
-        if checkResults.HasCriticalErrors then
-            checkResults.Errors 
-            |> ParsingError.ofFSharpErrorInfos 
-            |> Seq.toList
-            |> checkFailed 
-        else
-            let targetFile = 
-                checkResults.AssemblyContents.ImplementationFiles
-                |> List.filter (fun file -> file.FileName = targetName)
-                |> List.exactlyOne
-            let errors = ParsingError.ofFSharpErrorInfos checkResults.Errors
-            let graph = 
-                parseProgramTree [targetFile]
-                |> ParsedProgram.toComputationGraph
-            graph, errors
 
-    let parse' mdSources = 
+    let parse mdSources = 
         let declSources = 
             mdSources
             |> Seq.fold (fun wfs -> function | DeclSource source -> source :: wfs
@@ -375,5 +343,3 @@ module TypedParser =
                 |> parseProgramTree
                 |> ParsedProgram.toComputationGraph
             graph, errors
-
-    let parseSingle = parse []

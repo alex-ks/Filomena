@@ -78,7 +78,7 @@ type Compiler(resolver: IResolver) =
                 let! modules = getOriginsAsync modulesList
                 let! sourcesForOpen = (gatherSourcesAsync modules)
                 let sources = Seq.append sourcesForOpen [WorkflowSource workflow]
-                let program, errors = TypedParser.parse' sources in
+                let program, errors = TypedParser.parse sources in
                 if not (Seq.exists (fun e -> e.Severity = ErrorSeverity.Error) errors) then
                     return program
                 else
