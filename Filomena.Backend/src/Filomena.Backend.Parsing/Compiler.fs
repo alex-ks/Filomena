@@ -76,7 +76,8 @@ type Compiler(resolver: IResolver) =
             match parseAndCheckScript workflow with
             | Ok modulesList ->
                 let! modules = getOriginsAsync modulesList
-                let! sources = gatherSourcesAsync modules
+                let! sourcesForOpen = (gatherSourcesAsync modules)
+                let sources = Seq.append sourcesForOpen [WorkflowSource workflow]
                 let program, errors = TypedParser.parse' sources in
                 if not (Seq.exists (fun e -> e.Severity = ErrorSeverity.Error) errors) then
                     return program
