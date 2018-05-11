@@ -32,16 +32,19 @@ type ResolverRestClient(resolverUrl) =
 
     member __.ResolveAsync (atomIds: AtomId seq) = 
         task {
-            use client = new HttpClient ()
-            let queryContent = JsonConvert.SerializeObject atomIds
-            let uri = Uri (Uri resolverUrl, "/api/atoms?atoms=" + queryContent)
-            let! response = client.GetAsync uri
-            let! body = response.Content.ReadAsStringAsync () in
-            match response.StatusCode with
-            | HttpStatusCode.OK -> 
-                return JsonConvert.DeserializeObject<AtomContent seq> body
-            | _ ->
-                return raise (InvalidOperationException body) 
+            if Seq.isEmpty atomIds then
+                return Seq.empty
+            else
+                use client = new HttpClient ()
+                let queryContent = JsonConvert.SerializeObject atomIds
+                let uri = Uri (Uri resolverUrl, "/api/atoms?atoms=" + queryContent)
+                let! response = client.GetAsync uri
+                let! body = response.Content.ReadAsStringAsync () in
+                match response.StatusCode with
+                | HttpStatusCode.OK -> 
+                    return JsonConvert.DeserializeObject<AtomContent seq> body
+                | _ ->
+                    return raise (InvalidOperationException body) 
         }
 
     member __.GetContentAsync (atomId: AtomId) = 
