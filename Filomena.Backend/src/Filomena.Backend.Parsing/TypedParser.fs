@@ -11,6 +11,16 @@ type ModuleSource = WorkflowSource of string | DeclSource of string
 module TypedParser =
     let checker = FSharpChecker.Create(keepAssemblyContents=true)
     let defaultFileVersion = 0
+
+    type private Context = { nameOpt: string option
+                             program: ParsedProgram
+                             predcessors: Operation Set }
+                                       
+    module private Context = 
+        let ofArgs nameOpt predcessors program = 
+            { nameOpt = nameOpt
+              program = program
+              predcessors = predcessors }
     
     let getProjectOptions filesNames projName = 
         let compilerParams = 
@@ -131,10 +141,11 @@ module TypedParser =
         let ofExprs exprs = exprs |> List.map (Expression)
         let ofInt (i: int) = Constant (string i, PrimitiveTypes.Int)
 
-    let rec visitExpression (nameOpt: string option) 
-                            predcessors
-                            (parsedProgram: ParsedProgram) 
-                            (expr: FSharpExpr) =
+    let rec private visitExpression context 
+                                    (expr: FSharpExpr) =
+        let { nameOpt = nameOpt
+              program = parsedProgram
+              predcessors = predcessors } = context
         let visitCall (objExprOpt, 
                        fullFuncName,
                        funcTypeOpt,
@@ -175,18 +186,27 @@ module TypedParser =
                         unexpected "Renaming must provide value type"
                     | _, _ ->
                         template
-                in 
-                updatedProgram 
-                |> ParsedProgram.addMnemonic name (Output operation), (Set.add operation predcessors)
+                in { nameOpt = Some name
+                     program = updatedProgram |> ParsedProgram.addMnemonic name (Output operation)
+                     predcessors = predcessors }
 
         match expr with
         | BasicPatterns.Sequential (expr1, expr2) ->
-            let updatedProgram, predcessors' = visitExpression None predcessors parsedProgram expr1
-            visitExpression nameOpt predcessors' updatedProgram expr2
+            let context = visitExpression (Context.ofArgs None predcessors parsedProgram) expr1
+            let name = 
+                match context.nameOpt with 
+                | Some name -> name 
+                | None -> unexpected "Every returned context must be named"
+            let predcessors' = 
+                match context.program.mnemonics.[name] with
+                | Output operation -> Set.add operation predcessors
+                | _ -> predcessors
+            visitExpression (Context.ofArgs nameOpt predcessors' context.program) expr2
             
         | BasicPatterns.Let ((bindVar, bindExpr), bodyExpr) ->
-            let updatedProgram, _ = visitExpression (Some bindVar.FullName) predcessors parsedProgram bindExpr
-            visitExpression nameOpt predcessors updatedProgram bodyExpr
+            let context = 
+                visitExpression (Context.ofArgs (Some bindVar.FullName) predcessors parsedProgram) bindExpr
+            visitExpression (Context.ofArgs nameOpt context.predcessors context.program) bodyExpr
 
         | BasicPatterns.TupleGet (tupleType, index, tupleExpr) ->
             visitCall (None,
@@ -241,7 +261,7 @@ module TypedParser =
                     |> ParsedProgram.addMnemonic name (Output copyOp)
                 | None ->
                     parsedProgram
-            updatedProgram, predcessors
+            in Context.ofArgs nameOpt predcessors updatedProgram
 
         | BasicPatterns.Const (objVal, fsType) ->
             let dataType = typeToModel fsType
@@ -251,8 +271,8 @@ module TypedParser =
                 | None -> ParsedProgram.escapeName parsedProgram (dataType.name + "val")
             let updatedProgram = 
                 parsedProgram
-                |> ParsedProgram.addMnemonic name (Const (serializeConst objVal, dataType))
-            updatedProgram, predcessors
+                |> ParsedProgram.addMnemonic name (Const (serializeConst objVal, dataType))               
+            in Context.ofArgs (Some name) predcessors updatedProgram
 
         | _ ->
             printfn "%A" expr
@@ -266,8 +286,9 @@ module TypedParser =
                 ProgramDiff.empty, value.FullName
             | _ -> 
                 let argName = ParsedProgram.escapeName parsedProgram ((unnamedInput funcName) + (string i))
-                let updatedProgram, _ = visitExpression (Some argName) predcessors parsedProgram argExpr in
-                (updatedProgram - parsedProgram), argName
+                let context = 
+                    visitExpression (Context.ofArgs (Some argName) predcessors parsedProgram) argExpr in
+                (context.program - parsedProgram), argName
         | Constant (value, t) ->
             let argName = ParsedProgram.escapeName parsedProgram (funcName + (string i))
             let updatedProgram = ParsedProgram.addMnemonic argName (Const (value, t)) parsedProgram
@@ -285,16 +306,24 @@ module TypedParser =
                 failwith "Nested types or modules are not allowed"
 
             | InitAction expr ->
-                let updatedProgram, predcessors' = visitExpression None predcessors program expr
-                visitDeclarations updatedProgram predcessors' tail
+                let context = visitExpression (Context.ofArgs None predcessors program) expr
+                let name = 
+                    match context.nameOpt with 
+                    | Some name -> name 
+                    | None -> unexpected "Every returned context must be named"
+                let predcessors' = 
+                    match context.program.mnemonics.[name] with
+                    | Output operation -> Set.add operation predcessors
+                    | _ -> predcessors
+                visitDeclarations context.program predcessors' tail
 
             | MemberOrFunctionOrValue (funcOrVal, _, expression) ->
                 if (|Function|) funcOrVal then
                     "Functions declaration" |> notSupported
                 else
-                    let updatedProgram, predcessors' = 
-                        visitExpression (Some funcOrVal.FullName) predcessors program expression
-                    visitDeclarations updatedProgram predcessors' tail
+                    let context = 
+                        visitExpression (Context.ofArgs (Some funcOrVal.FullName) predcessors program) expression
+                    visitDeclarations context.program context.predcessors tail
             
     let (|Module|) (x: FSharpEntity) = if x.IsFSharpModule then Some x else None
     
@@ -304,7 +333,6 @@ module TypedParser =
             |> Seq.fold (fun (program, predcessors) implFile ->
                             match implFile.Declarations with
                             | [Entity(Module _, subdecls)] ->
-                                do printfn "%A" subdecls
                                 visitDeclarations program predcessors subdecls
                             | [_] -> 
                                 failwith "Top-level declaration can be module only"

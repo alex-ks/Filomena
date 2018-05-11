@@ -12,11 +12,14 @@ let main args =
     let source = if Array.length args > 0 then
                      System.IO.File.ReadAllText(args.[0]) 
                  else """
-module A
+module MyFiltering
 
 open SI
+open Eeg
 
-let a = 1. / 1.<s>
+let raw = loadEeg "R013_raw"
+let raw' = dropChannel "NOSE" raw
+let filtered = filterFrequences 0.1<Hz> 40.<Hz> raw'
 """
     let optSource = if Array.length args > 1 then
                         System.IO.File.ReadAllText args.[1]
@@ -29,7 +32,7 @@ let print (str: string) = ignore str
     do print source
 
     try
-        let compiler = ResolverRestClient "http://ecclesia.ict.nsc.ru:27945" |> Compiler
+        let compiler = ResolverRestClient "http://localhost:7945" |> Compiler
         let graph = (compiler.Compile source).Result
         do print graph.mnemonicsTable
     with
